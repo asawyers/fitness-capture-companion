@@ -1,5 +1,7 @@
 # Fitness Capture Companion implementation plan
 
+Historical implementation record. The user reset the work to planning on 2026-10-22. The current working design is `../specs/2026-10-22-fitness-capture-design.md`; this older checklist is not authorization for additional implementation.
+
 Goal: a deliberately small assessment project for capturing private meal/workout notes and manually logging them elsewhere.
 
 Architecture: React client, TypeScript route handlers, D1/SQLite entry storage. Sites owns sign-in/session handling; every query is scoped to its verified user ID. No paid AI services or raw-audio storage. A conservative deterministic parser extracts explicit fields; unknown amounts stay blank. Local sign-in is the starter's loopback-only mock, excluded from production.
