@@ -15,7 +15,7 @@ Text and tap-to-record voice → editable transcript → immediate save → opti
 - [x] Domain logic (`lib/entries.ts`, `tests/entries.test.ts`): test explicit food amounts, ambiguous text preservation, strength/cardio fields, missing quantities, validated clarification and plain text export. Implement parser after failing tests. Preserve original note forever and keep updates on the same ID.
 - [x] Private persistence (`db/schema.ts`, `lib/store.ts`, `lib/api.ts`, `app/api/entries/route.ts`, `app/api/entries/[id]/route.ts`, `tests/api.test.ts`): schema migration; prepared queries with owner predicates; request validation, same-origin writes, version conflicts, idempotent creation. Verify two synthetic users cannot read/update each other's entries; data survives SQLite reopen.
 - [x] Capture/review UI (`app/page.tsx`, `app/capture-app.tsx`, `app/use-voice.ts`, `app/globals.css`): signed-out sign-in, capture kinds, draft-preserving errors, voice stop/retry/disclosure, optional clarification, original/current review, editing, inbox/logged filters, individual copy and explicit status changes. Verify keyboard and small-screen flows.
-- [ ] Delivery (`README.md`, `docs/VALIDATION.md`): typecheck, unit/integration tests, build, local browser verification using synthetic data; publish this separate owner-private Site via Sites source workflow and report literal verified URLs plus limits.
+- [x] Delivery (`README.md`, `docs/VALIDATION.md`): typecheck, unit/integration tests, build, local browser verification using synthetic data; publish this separate owner-private Site via Sites source workflow and report literal verified URLs plus limits.
 
 ## UI direction
 
@@ -26,3 +26,5 @@ A compact field notebook: blue ink #183f65, paper #f4f7fa, white #fff, muted ste
 Run `npm test`, `npm run typecheck`, `npm run build`; test actual SQLite with synthetic users and rows. Browser QA covers signed-out access, local sign-in, meal and workout creation, optional questions, reload, edit, export/logged separation, mobile overflow, microphone failures and retry. Speech recognition is browser/vendor dependent and can transmit audio to the browser's provider: disclose before recording, no app-owned audio retention. Deterministic extraction is intentionally bounded; the note and manual editing are the fallback. Hosted auth and microphone hardware need honest separate evidence.
 
 User update: file downloads removed. Plain-text copy/paste only; do not attempt download QA.
+
+Delivery boundary: owner-private hosting successfully published; full hosted browser capture requires the user to complete OpenAI login. Local browser flows and synthetic cross-user isolation are verified.

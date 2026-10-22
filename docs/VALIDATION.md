@@ -39,3 +39,9 @@ Used only synthetic notes in the loopback development account:
 - Actual microphone hardware/provider transcription and permission dialogs are not claimed tested. The recording lifecycle and failures were simulated in unit tests; voice remains browser/vendor dependent.
 - Local account sign-in uses the platform starter's loopback-only mock. Hosted session verification is dispatch-owned; a second real hosted account has not been tested. Database/API isolation was tested with two distinct synthetic identities against real SQLite.
 - Hosting remains owner-private; evaluator access has not been changed.
+
+## Hosted publication and local setup
+
+The separate owner-private deployment succeeded at https://fitness-capture-companion.flowy-gem-9293.chatgpt.site. Brave confirmed the live authentication gate and the correct Fitness Capture Companion ChatGPT sign-in flow. OpenAI then required the user’s password, so authenticated hosted capture remains pending user login; the sign-in tab was left ready. No password was read or entered.
+
+Corrected the generated Wrangler configuration’s migration directory to resolve from `dist/server`. Applied migrations successfully to a fresh disposable local database, then reran the same command and confirmed `No migrations to apply!`.

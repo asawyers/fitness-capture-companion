@@ -75,7 +75,7 @@ Voice requires a browser that implements the SpeechRecognition/Web Speech interf
 
 This project has its own `.openai/hosting.json` identity and separate D1 database. The Sites source workflow builds, commits, pushes, packages, and deploys that exact source. The initial site stays **owner-private**; evaluator access has not been broadened. The app also enforces per-user entry ownership independently of the hosting audience. Sharing with an evaluator is a separate access decision.
 
-No GitHub mirror was created: the local GitHub CLI's saved credentials are invalid. Sites provides its own project-scoped source repository; publishing results are recorded in the handoff. No Travel credentials, providers, database, repository, or deployment were copied.
+No GitHub mirror was created: the local GitHub CLI's saved credentials are invalid. Sites provides its own project-scoped source repository; source URL: `https://git.chatgpt-team.site/2a43a499-76b2-4f43-84f8-c0127fd2c055/appgprj_6ada8965f0208191ab7c3d596cd580f9.git`. The deployed app is [Fitness Capture Companion](https://fitness-capture-companion.flowy-gem-9293.chatgpt.site). No Travel credentials, providers, database, repository, or deployment were copied.
 
 ## Incomplete / intentionally bounded
 
