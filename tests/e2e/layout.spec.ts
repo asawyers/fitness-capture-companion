@@ -44,7 +44,11 @@ test('desktop organizes capture, inbox and review without overflow', async ({ pa
   const inbox = await page.locator('.inbox').boundingBox();
   const review = await page.locator('.review-panel').boundingBox();
   expect(capture!.y + capture!.height).toBeLessThanOrEqual(inbox!.y);
+  expect(Math.abs(capture!.x - inbox!.x)).toBeLessThanOrEqual(3);
+  expect(Math.abs(capture!.width - inbox!.width)).toBeLessThanOrEqual(6);
   expect(inbox!.x + inbox!.width).toBeLessThanOrEqual(review!.x);
+  expect(Math.abs(capture!.y - review!.y)).toBeLessThanOrEqual(1);
+  expect(capture!.height).toBeLessThan(280);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: '/tmp/fitness-layout-desktop.png', fullPage: true });
 });

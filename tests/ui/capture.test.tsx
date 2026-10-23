@@ -8,7 +8,7 @@ test('compact capture stays editable without a device dictation button', () => {
   render(<Capture busy={false} blocked={false} onSave={vi.fn()} />);
   expect(screen.getByRole('heading', { name: 'New note' })).toBeTruthy();
   const note = screen.getByRole('textbox', { name: 'Your note' }) as HTMLTextAreaElement;
-  expect(note.rows).toBe(2);
+  expect(note.rows).toBe(1);
   fireEvent.change(note, { target: { value: 'Lunch draft' } });
   note.focus();
   expect(screen.queryByRole('button', { name: 'Use device dictation' })).toBeNull();

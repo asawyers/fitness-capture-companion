@@ -161,7 +161,7 @@ summary::marker { font-size: 10px; }
 .loading-screen { padding: 80px 24px; max-width: 550px; margin: 0 auto; font-family: Georgia, serif; font-size: 25px; }
 
 
-/* Compact capture sits above the inbox and selected note. */
+/* Capture and inbox share the left column; review starts at the top on the right. */
 .notebook { max-width: 1280px; padding: 0 32px 32px; }
 .app-header { padding: 20px 0; gap: 20px; }
 .brand { gap: 12px; }
@@ -170,8 +170,8 @@ summary::marker { font-size: 10px; }
 .account { flex-direction: row; align-items: center; gap: 18px; max-width: 340px; }
 .account > span { font-size: 12px; }
 .notebook-grid { grid-template-columns: minmax(285px, 1fr) minmax(0, 2fr); gap: 24px; }
-.main-column { display: contents; }
-.capture-panel { grid-column: 1 / -1; }
+.main-column { display: flex; flex-direction: column; gap: 18px; }
+.capture-panel { grid-column: auto; }
 .capture-sheet .section-heading { margin-bottom: 12px; }
 .capture-sheet form { min-width: 0; }
 .capture-sheet textarea { min-height: 86px; }
@@ -329,15 +329,15 @@ summary { touch-action: manipulation; }
 @keyframes loading-turn { to { transform: rotate(360deg); } }
 @keyframes feedback-appear { from { opacity: .4; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 /* Keep the quick-capture composer small; longer drafts still grow naturally. */
-.capture-sheet { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 14px 18px; }
+.capture-sheet { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; padding: 12px 14px; }
 .capture-sheet .section-heading { margin: 0; }
-.capture-sheet h2 { font-size: 23px; }
+.capture-sheet h2 { font-size: 20px; }
 .capture-sheet .kind-switch { margin: 0; min-width: 0; }
-.capture-sheet .kind-switch button { flex: 0 0 auto; padding: 7px 10px; }
+.capture-sheet .kind-switch button { flex: 0 0 auto; padding: 7px 6px; font-size: 12px; gap: 5px; }
 .capture-sheet form { grid-column: 1 / -1; margin-top: 8px; }
 .capture-sheet .field-label { gap: 0; }
 .capture-sheet .voice-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.capture-sheet textarea { min-height: 64px; line-height: 1.5; padding: 8px 11px; }
+.capture-sheet textarea { min-height: 48px; line-height: 1.5; padding: 8px 10px; }
 .capture-sheet .voice-toolbar { margin-top: 6px; gap: 6px 10px; }
 .voice-actions { margin-left: auto; }
 .capture-sheet form > .capture-hint { margin-top: 6px; }

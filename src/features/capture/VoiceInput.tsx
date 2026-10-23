@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useVoice } from './use-voice';
 
-export function VoiceInput({ value, onChange, label, placeholder, disabled = false, compact = false, onRecording, actions, onSubmit }: {
+export function VoiceInput({ value, onChange, label, placeholder, disabled = false, compact = false, rows, onRecording, actions, onSubmit }: {
   value: string; onChange(value: string): void; label: string; placeholder: string;
-  disabled?: boolean; compact?: boolean; onRecording?(recording: boolean): void; actions?: ReactNode; onSubmit?(): void;
+  disabled?: boolean; compact?: boolean; rows?: number; onRecording?(recording: boolean): void; actions?: ReactNode; onSubmit?(): void;
 }) {
   const voice = useVoice();
   const [disclose, setDisclose] = useState(false);
@@ -28,7 +28,7 @@ export function VoiceInput({ value, onChange, label, placeholder, disabled = fal
           if (onSubmit && !disabled && !recording && event.key === 'Enter' && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && !event.nativeEvent.isComposing) {
             event.preventDefault(); onSubmit();
           }
-        }} rows={compact ? 2 : 3} />
+        }} rows={rows ?? (compact ? 2 : 3)} />
     </label>
     <div className="voice-toolbar">
       {voice.supported ? <span className="browser-recording"><span className="muted small">Browser recording</span> <button type="button" className={recording ? 'button recording' : 'button subtle'} disabled={disabled || voice.status === 'stopping'}

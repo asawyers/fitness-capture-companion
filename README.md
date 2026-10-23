@@ -49,7 +49,7 @@ The original capture and replies remain saved if AI fails or is unavailable. A 6
 
 System keyboard dictation can enter text directly into the note or reply field; there is no app-level device dictation button. Browser recording remains available: tap Record, read the disclosure, then start recording. The browser's speech service may process audio; recognition stops after 60 seconds. Some browsers, including Brave, expose the API without a working transcription service. Errors preserve drafts and point to device dictation or typing. Actual microphone/vendor compatibility remains unverified.
 
-Desktop capture sits above an inbox list and selected-entry review. Mobile uses Capture/Inbox navigation and Back to inbox; drafts stay mounted while switching views. Review puts structured details and optional clarification before copy/log actions, with saved notes and conversation available in expandable sections.
+Desktop capture is a small, expanding one-line composer in the left column directly above the inbox; selected-entry review starts at the top of the right column. Mobile uses Capture/Inbox navigation and Back to inbox; drafts stay mounted while switching views. Review puts structured details and optional clarification before copy/log actions, with saved notes and conversation available in expandable sections.
 
 Meal/workout icons and labeled status colors help scan the inbox. Loading spinners and short save/copy feedback respect the device's reduced-motion preference. Icons are decorative; text labels remain available to assistive technology.
 
