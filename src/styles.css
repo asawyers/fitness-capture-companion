@@ -318,6 +318,7 @@ summary { touch-action: manipulation; }
 .empty-inbox > p:first-of-type { font-family: Georgia, serif; font-size: 22px; margin-bottom: 5px; }
 .copy-feedback { margin-top: 12px; }
 .copy-feedback.success { color: #245e47; animation: feedback-appear 180ms ease-out; }
+.reply-progress { padding: 10px 12px; margin: 0 0 14px; border-left: 3px solid #245bb6; background: #e8f0fc; color: #173e72; font-size: 14px; }
 .loading-state { line-height: 1.6; }
 .loading-spinner { animation: loading-turn 1s linear infinite; }
 .button { transition: background-color 140ms ease, border-color 140ms ease; }

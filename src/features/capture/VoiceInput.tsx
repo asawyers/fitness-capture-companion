@@ -1,9 +1,9 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useVoice } from './use-voice';
 
-export function VoiceInput({ value, onChange, label, placeholder, disabled = false, compact = false, onRecording, actions }: {
+export function VoiceInput({ value, onChange, label, placeholder, disabled = false, compact = false, onRecording, actions, onSubmit }: {
   value: string; onChange(value: string): void; label: string; placeholder: string;
-  disabled?: boolean; compact?: boolean; onRecording?(recording: boolean): void; actions?: ReactNode;
+  disabled?: boolean; compact?: boolean; onRecording?(recording: boolean): void; actions?: ReactNode; onSubmit?(): void;
 }) {
   const voice = useVoice();
   const [disclose, setDisclose] = useState(false);
@@ -26,7 +26,11 @@ export function VoiceInput({ value, onChange, label, placeholder, disabled = fal
   return <div className={`voice-input ${compact ? 'compact' : ''}`}>
     <label className="field-label"><span className="voice-label">{label}</span>
       <textarea ref={textarea} aria-label={label} aria-describedby={deviceGuidance ? guidanceId : undefined} value={value} maxLength={4000} placeholder={placeholder} disabled={disabled || recording}
-        onChange={event => onChange(event.target.value)} rows={compact ? 2 : 3} />
+        onChange={event => onChange(event.target.value)} onKeyDown={event => {
+          if (onSubmit && !disabled && !recording && event.key === 'Enter' && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && !event.nativeEvent.isComposing) {
+            event.preventDefault(); onSubmit();
+          }
+        }} rows={compact ? 2 : 3} />
     </label>
     <div className="voice-toolbar">
       <button type="button" className="button subtle" disabled={disabled || recording} aria-expanded={deviceGuidance} aria-controls={guidanceId}

@@ -15,6 +15,7 @@ export function useFitness(){
   const [selected,setSelected]=useState<SavedConversation|null>(null);
   const [loading,setLoading]=useState(false);
   const [busy,setBusy]=useState(false);
+  const [analyzingEntries,setAnalyzingEntries]=useState<string[]>([]);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
   const epoch=useRef(0);
@@ -37,7 +38,7 @@ export function useFitness(){
       const next=session?{id:session.user.id,email:session.user.email??''}:null;
       if(identity.current!==next?.id){
         epoch.current++;selection.current++;identity.current=next?.id??null;
-        setEntries([]);show(null);captures.current=null;replies.current=null;setError('');setNotice('');setBusy(false);setLoading(false);pending.current=false;
+        setEntries([]);show(null);captures.current=null;replies.current=null;setError('');setNotice('');setBusy(false);setLoading(false);pending.current=false;setAnalyzingEntries([]);runs.current.clear();
       }
       setUser(next);setAuthReady(true);
     };
@@ -67,8 +68,9 @@ export function useFitness(){
     finally{if(token===epoch.current&&ticket===selection.current)setLoading(false);}
   }
   async function processAnalysis(entry:Entry,token:number){
-    if(!supabase||!repo||runs.current.has(entry.id)||!import.meta.env.VITE_FITNESS_API_URL)return;
+    if(token!==epoch.current||!supabase||!repo||runs.current.has(entry.id)||!import.meta.env.VITE_FITNESS_API_URL)return;
     runs.current.add(entry.id);
+    setAnalyzingEntries(current=>[...current,entry.id]);setError('');
     try{
       const result=await analyzeEntry(supabase,entry,crypto.randomUUID());
       if(token!==epoch.current)return;
@@ -76,7 +78,7 @@ export function useFitness(){
       if(active.current?.entry.id===entry.id){const loaded=await repo.load(entry.id);if(token===epoch.current&&active.current?.entry.id===entry.id)show(loaded);}
       setNotice('Analysis saved. Any follow-up is optional.');
     }catch(e){if(token===epoch.current)setError(message(e));}
-    finally{runs.current.delete(entry.id);}
+    finally{if(token===epoch.current){runs.current.delete(entry.id);setAnalyzingEntries(current=>current.filter(id=>id!==entry.id));}}
   }
   async function mutate(action:()=>Promise<Entry>,success:string,selectResult=false):Promise<Entry|null>{
     if(pending.current||!repo||!user)return null;
@@ -122,7 +124,7 @@ export function useFitness(){
   async function signIn(email:string,password:string){if(supabase)await authAction(()=>supabase!.auth.signInWithPassword({email,password}));}
   async function signUp(email:string,password:string){if(!supabase)return;await authAction(async()=>{const result=await supabase!.auth.signUp({email,password});if(!result.error&&!result.data.session)setNotice('Check your email to confirm the account, then sign in.');return result;});}
   async function signOut(){if(supabase)await authAction(()=>supabase!.auth.signOut());}
-  return{configured,authReady,user,entries,selected,loading,busy,error,notice,signIn,signUp,signOut,capture,select,reply,
+  return{configured,authReady,user,entries,selected,loading,busy,analyzingEntries,error,notice,signIn,signUp,signOut,capture,select,reply,
     saveDetails:(details:Detail[])=>savePatch({details},'Details saved.'),
     editNote:(note:string)=>savePatch({note},'Edited note saved. You can analyze it again when ready.'),
     setLogged:(logged:boolean)=>savePatch({logged},logged?'Marked as logged.':'Moved back to the inbox.'),

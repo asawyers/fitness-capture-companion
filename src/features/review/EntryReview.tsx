@@ -6,26 +6,30 @@ import { CircleCheck, Copy, Undo2 } from 'lucide-react';
 import { KindIcon, Spinner, StatusIcon } from '../../components/Feedback';
 
 export type EntryReviewProps = {
-  entry: Entry; messages: Message[]; busy: boolean;
+  entry: Entry; messages: Message[]; busy: boolean; analyzing?: boolean;
   saveDetails(details: Detail[]): Promise<boolean>; editNote(note: string): Promise<boolean>;
   setLogged(logged: boolean): Promise<boolean>; reply(content: string): Promise<boolean>;
   skipQuestion(): Promise<boolean>; analyze(): Promise<void>; onDirty(dirty: boolean): void;
 };
 const labels: Record<string, string> = { name: 'Food', amount: 'Amount', exercise: 'Exercise', sets: 'Sets', reps: 'Reps', weight: 'Weight', activity: 'Activity', duration: 'Duration', distance: 'Distance' };
 
-export function EntryReview({ entry, messages, busy, saveDetails, editNote, setLogged, reply, skipQuestion, analyze, onDirty }: EntryReviewProps) {
+export function EntryReview({ entry, messages, busy: externalBusy, analyzing = false, saveDetails, editNote, setLogged, reply, skipQuestion, analyze, onDirty }: EntryReviewProps) {
   const [noteExpanded, setNoteExpanded] = useState(false);
   const [editing, setEditing] = useState<'details' | 'note' | null>(null);
   const [details, setDetails] = useState<Detail[]>(entry.details);
   const [note, setNote] = useState(entry.note);
   const [answer, setAnswer] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyError, setReplyError] = useState('');
+  const replyInFlight = useRef(false);
+  const busy = externalBusy || replySubmitting;
   const [recording, setRecording] = useState(false);
   const [copyStatus, setCopyStatus] = useState('');
   const [showCopy, setShowCopy] = useState(false);
   const [processingExpired, setProcessingExpired] = useState(false);
   const copyArea = useRef<HTMLTextAreaElement>(null);
   const dirty = editing === 'details' ? JSON.stringify(details) !== JSON.stringify(entry.details) : editing === 'note' ? note !== entry.note : false;
-  useEffect(() => { onDirty(dirty || Boolean(answer.trim()) || recording); }, [dirty, answer, recording, onDirty]);
+  useEffect(() => { onDirty(dirty || Boolean(answer.trim()) || recording || replySubmitting); }, [dirty, answer, recording, replySubmitting, onDirty]);
   useEffect(() => {
     if (!editing) { setDetails(entry.details); setNote(entry.note); }
     setCopyStatus(''); setShowCopy(false);
@@ -56,6 +60,19 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
     const saved = editing === 'details' ? await saveDetails(details) : await editNote(note);
     if (saved) setEditing(null);
   }
+  async function saveReply() {
+    if (replyInFlight.current || busy || analyzing || recording || editing !== null || !entry.pendingQuestion || !answer.trim() || answer.length > 4000) return;
+    replyInFlight.current = true; setReplySubmitting(true); setReplyError('');
+    const submittedAnswer = answer;
+    try {
+      if (await reply(submittedAnswer)) setAnswer(current => current === submittedAnswer ? '' : current);
+      else setReplyError('Your reply could not be saved. Your text is still here. Try again.');
+    } catch {
+      setReplyError('Your reply could not be saved. Your text is still here. Try again.');
+    } finally {
+      replyInFlight.current = false; setReplySubmitting(false);
+    }
+  }
   async function copy() {
     if (blocked) return;
     try { await navigator.clipboard.writeText(savedText); setCopyStatus('Copied. Mark logged when you’ve added it to your tracker.'); }
@@ -81,14 +98,16 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
     {editing === 'details' && editActions}
     </section>
 
-    {((entry.analysisStatus === 'processing' && !processingExpired) || busy) && <p className="muted small loading-state" role="status"><Spinner />Saving or preparing details… Your original note is saved.</p>}
+    {!analyzing && !replySubmitting && ((entry.analysisStatus === 'processing' && !processingExpired) || busy) && <p className="muted small loading-state" role="status"><Spinner />Saving or preparing details… Your original note is saved.</p>}
     {(entry.analysisStatus === 'idle' || entry.analysisStatus === 'failed' || (entry.analysisStatus === 'processing' && processingExpired)) && <div className="analysis-retry"><p className="small">{entry.analysisStatus === 'processing' ? 'Details may have been interrupted. Your note is saved. You can retry now.' : entry.analysisStatus === 'failed' ? 'Details couldn’t be prepared. Your note is saved.' : 'Your note is saved. Prepare details when you’re ready.'}</p><button type="button" className="button subtle" disabled={blocked || editing !== null || Boolean(answer.trim())} onClick={() => void analyze()}>{entry.analysisStatus === 'idle' ? 'Prepare details' : 'Retry details'}</button></div>}
 
-    {(entry.pendingQuestion || answer.trim() || recording) && <section className="question" aria-labelledby="question-heading"><p className="muted small">{entry.pendingQuestion ? 'One optional detail' : 'Reply draft'}</p><h3 id="question-heading">{entry.pendingQuestion?.text ?? 'Your unsaved reply'}</h3>
-      {!entry.pendingQuestion && <p className="small">This question is no longer open. Your draft is still here. Discard it when you’re ready to continue.</p>}
-      <VoiceInput value={answer} onChange={setAnswer} label="Your reply" placeholder="Add what you remember…" compact disabled={busy || editing !== null} onRecording={setRecording} />
+    {(entry.pendingQuestion || answer.trim() || recording || replySubmitting || analyzing) && <section className="question" aria-labelledby="question-heading"><p className="muted small">{entry.pendingQuestion ? 'One optional detail' : analyzing ? 'Working on your saved entry' : 'Reply draft'}</p><h3 id="question-heading">{entry.pendingQuestion?.text ?? (analyzing ? 'Preparing details' : 'Your unsaved reply')}</h3>
+      {(replySubmitting || analyzing) && <p className="reply-progress loading-state" role="status"><Spinner />{replySubmitting ? 'Saving your reply…' : 'Preparing details… Your saved note and replies are safe.'}</p>}
+      {!entry.pendingQuestion && !analyzing && !replySubmitting && <p className="small">This question is no longer open. Your draft is still here. Discard it when you’re ready to continue.</p>}
+      {(entry.pendingQuestion || answer.trim() || recording) && <VoiceInput value={answer} onChange={setAnswer} label="Your reply" placeholder="Add what you remember…" compact disabled={busy || analyzing || editing !== null} onRecording={setRecording} onSubmit={() => void saveReply()} />}
       {answer.length > 4000 && <p className="inline-error" role="alert">Keep your reply within 4,000 characters. Your text is still here.</p>}
-      {entry.pendingQuestion && <div className="button-row"><button type="button" className="button primary" disabled={busy || recording || !answer.trim() || answer.length > 4000 || editing !== null} onClick={async () => { const submittedAnswer = answer; if (await reply(submittedAnswer)) setAnswer(current => current === submittedAnswer ? '' : current); }}>Save reply</button><button type="button" className="button subtle" disabled={busy || recording || Boolean(answer.trim()) || editing !== null} onClick={() => void skipQuestion()}>Skip</button><span className="muted small">You can leave this for later.</span></div>}
+      {entry.pendingQuestion && <div className="button-row"><button type="button" className="button primary" disabled={busy || analyzing || recording || !answer.trim() || answer.length > 4000 || editing !== null} onClick={() => void saveReply()}>{(replySubmitting || analyzing) && <Spinner />}{replySubmitting ? 'Saving reply…' : analyzing ? 'Preparing details…' : 'Save reply'}</button><button type="button" className="button subtle" disabled={busy || analyzing || recording || Boolean(answer.trim()) || editing !== null} onClick={() => void skipQuestion()}>Skip</button><span className="muted small">Enter to send · Shift+Enter for a new line.</span></div>}
+      {replyError && <p className="inline-error" role="alert">{replyError}</p>}
       {answer.trim() && <button type="button" className="text-button discard-reply" disabled={busy || recording} onClick={() => setAnswer('')}>Discard reply</button>}
     </section>}
 

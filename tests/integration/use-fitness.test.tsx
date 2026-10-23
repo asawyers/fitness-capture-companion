@@ -136,3 +136,56 @@ test('a capture conversation arriving late cannot replace a newer explicit selec
   expect(result.current.busy).toBe(false);
   expect(result.current.loading).toBe(false);
 });
+
+test('reply analysis remains observable after saving finishes and clears when analysis completes', async () => {
+  vi.stubEnv('VITE_FITNESS_API_URL', 'https://synthetic.invalid/fitness');
+  const { result } = await signedIn();
+  const first = entry(1);
+  mocks.repo.load.mockResolvedValueOnce(conversation(first));
+  await act(async () => { await result.current.select(first.id); });
+  const saved = { ...first, version: 2 };
+  const analyzed = { ...saved, version: 3, analysisStatus: 'ready' as const };
+  mocks.repo.reply.mockResolvedValueOnce(saved);
+  mocks.repo.load.mockResolvedValueOnce(conversation(saved));
+  const pendingAnalysis = deferred<Entry>();
+  mocks.analyze.mockReturnValueOnce(pendingAnalysis.promise);
+  await act(async () => { expect(await result.current.reply('one cup')).toBe(true); });
+  expect(result.current.busy).toBe(false);
+  expect(result.current.analyzingEntries).toEqual([first.id]);
+  mocks.repo.load.mockResolvedValueOnce(conversation(analyzed));
+  await act(async () => { pendingAnalysis.resolve(analyzed); });
+  await waitFor(() => expect(result.current.analyzingEntries).toEqual([]));
+  expect(result.current.selected?.entry.version).toBe(3);
+});
+
+test('analysis failure clears its loading state and preserves the saved entry', async () => {
+  vi.stubEnv('VITE_FITNESS_API_URL', 'https://synthetic.invalid/fitness');
+  const { result } = await signedIn();
+  const saved = entry(1);
+  mocks.repo.load.mockResolvedValueOnce(conversation(saved));
+  await act(async () => { await result.current.select(saved.id); });
+  mocks.analyze.mockRejectedValueOnce(new Error('Synthetic analysis unavailable'));
+  await act(async () => { await result.current.analyze(); });
+  expect(result.current.analyzingEntries).toEqual([]);
+  expect(result.current.selected?.entry).toEqual(saved);
+  expect(result.current.error).toBe('Synthetic analysis unavailable');
+});
+
+test('account changes clear analysis indicators and ignore late results', async () => {
+  vi.stubEnv('VITE_FITNESS_API_URL', 'https://synthetic.invalid/fitness');
+  const { result } = await signedIn();
+  const saved = entry(1);
+  mocks.repo.load.mockResolvedValueOnce(conversation(saved));
+  await act(async () => { await result.current.select(saved.id); });
+  const pendingAnalysis = deferred<Entry>();
+  mocks.analyze.mockReturnValueOnce(pendingAnalysis.promise);
+  let running!: Promise<void>;
+  act(() => { running = result.current.analyze(); });
+  expect(result.current.analyzingEntries).toEqual([saved.id]);
+  act(() => { mocks.auth.onAuthStateChange.mock.calls[0][0]('SIGNED_OUT', null); });
+  expect(result.current.analyzingEntries).toEqual([]);
+  await act(async () => { pendingAnalysis.resolve({ ...saved, version: 2 }); await running; });
+  expect(result.current.selected).toBeNull();
+  expect(result.current.entries).toEqual([]);
+  expect(result.current.notice).toBe('');
+});

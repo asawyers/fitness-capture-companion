@@ -145,3 +145,33 @@ test('copying saved text leaves logging as a separate action', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Mark logged' }));
   expect(props.setLogged).toHaveBeenCalledWith(true);
 });
+
+test('reply submission immediately acknowledges Enter, blocks repeats and preserves failed drafts', async () => {
+  let finish!: (saved: boolean) => void;
+  const reply = vi.fn(() => new Promise<boolean>(resolve => { finish = resolve; }));
+  render(<EntryReview entry={{ ...entry, pendingQuestion: { itemIndex: 0, field: 'amount', text: 'How many eggs?' } }} messages={[]} busy={false} saveDetails={vi.fn()} editNote={vi.fn()} setLogged={vi.fn()} reply={reply} skipQuestion={vi.fn()} analyze={vi.fn()} onDirty={vi.fn()} />);
+  const answer = screen.getByRole('textbox', { name: 'Your reply' });
+  fireEvent.change(answer, { target: { value: 'two eggs' } });
+  fireEvent.keyDown(answer, { key: 'Enter', shiftKey: true });
+  fireEvent.keyDown(answer, { key: 'Enter', isComposing: true });
+  expect(reply).not.toHaveBeenCalled();
+  fireEvent.keyDown(answer, { key: 'Enter' });
+  expect(reply).toHaveBeenCalledExactlyOnceWith('two eggs');
+  expect((screen.getByRole('button', { name: 'Saving reply…' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText('Saving your reply…')).toBeTruthy();
+  fireEvent.keyDown(answer, { key: 'Enter' });
+  expect(reply).toHaveBeenCalledOnce();
+  await act(async () => { finish(false); });
+  expect((answer as HTMLTextAreaElement).value).toBe('two eggs');
+  expect((screen.getByRole('button', { name: 'Save reply' }) as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.getByRole('alert').textContent).toContain('could not be saved');
+});
+
+test('background analysis stays visible beside the question after the reply is saved', () => {
+  render(<EntryReview entry={entry} messages={[]} busy={false} analyzing saveDetails={vi.fn()} editNote={vi.fn()} setLogged={vi.fn()} reply={vi.fn()} skipQuestion={vi.fn()} analyze={vi.fn()} onDirty={vi.fn()} />);
+  const question = screen.getByRole('region', { name: 'Preparing details' });
+  expect(question.hasAttribute('aria-busy')).toBe(false);
+  expect(question.querySelector('[role="status"]')).toBeTruthy();
+  expect(question.textContent).toContain('Your saved note and replies are safe.');
+  expect(question.querySelector('.loading-spinner')).toBeTruthy();
+});

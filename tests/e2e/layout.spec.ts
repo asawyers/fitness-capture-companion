@@ -22,11 +22,12 @@ test.beforeEach(async ({ page }) => {
       export function useFitness() {
         const [selected, setSelected] = useState(null);
         const [loading, setLoading] = useState(false);
+        const [analyzingEntries, setAnalyzingEntries] = useState([]);
         return {configured:true,authReady:true,user:{id:'synthetic',email:'demo@example.test'},
-          entries,selected,loading,busy:false,error:'',notice:'',
+          entries,selected,loading,analyzingEntries,busy:false,error:'',notice:'',
           select:async id=>{setLoading(true);await new Promise(r=>setTimeout(r,30));setSelected({entry:entries.find(e=>e.id===id),messages:[{id:'message',role:'user',content:'Two eggs and rice'}]});setLoading(false)},
           capture:async()=>{setSelected({entry:entries[0],messages:[]});return true},
-          refresh:async()=>{},signOut:async()=>{},reply:async()=>true,saveDetails:async()=>true,
+          refresh:async()=>{},signOut:async()=>{},reply:async()=>{await new Promise(r=>setTimeout(r,350));setAnalyzingEntries([selected.entry.id]);setTimeout(()=>setAnalyzingEntries([]),1200);return true},saveDetails:async()=>true,
           editNote:async()=>true,setLogged:async()=>true,skipQuestion:async()=>true,analyze:async()=>{}
         };
       }
@@ -99,6 +100,24 @@ test('status cues retain labels and loading respects reduced motion', async ({ p
   expect(await processing.locator('svg').getAttribute('aria-hidden')).toBe('true');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   expect(await processing.locator('.loading-spinner').evaluate(element => getComputedStyle(element).animationName)).toBe('loading-turn');
+});
+
+test('Enter shows immediate reply feedback through save and background analysis', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('navigation', { name: 'Notebook' }).getByRole('button', { name: /Inbox/ }).click();
+  await page.getByRole('button', { name: /Two eggs and rice 0/ }).click();
+  const answer = page.getByRole('textbox', { name: 'Your reply' });
+  await answer.fill('One cup');
+  await answer.press('Enter');
+  await expect(page.getByRole('button', { name: 'Saving reply…', exact: true })).toBeDisabled();
+  await expect(page.getByText('Saving your reply…', { exact: true })).toBeVisible();
+  await expect(page.getByText('Preparing details… Your saved note and replies are safe.', { exact: true })).toBeVisible();
+  await expect(page.locator('.question .loading-spinner').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Preparing details…', exact: true })).toBeDisabled();
+  await expect(answer).toHaveValue('');
+  await page.screenshot({ path: '/tmp/fitness-reply-loading.png', fullPage: true });
+  await expect(page.getByRole('button', { name: 'Save reply', exact: true })).toBeVisible();
 });
 
 test('resizing keeps simulated recording and reply drafts reachable', async ({ page }) => {

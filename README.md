@@ -53,6 +53,8 @@ Desktop capture sits above an inbox list and selected-entry review. Mobile uses 
 
 Meal/workout icons and labeled status colors help scan the inbox. Loading spinners and short save/copy feedback respect the device's reduced-motion preference. Icons are decorative; text labels remain available to assistive technology.
 
+Optional replies submit with Save reply or Enter (Shift+Enter inserts a new line). The question panel immediately shows Saving reply, then Preparing details while background analysis runs. Repeat submissions are blocked; failed saves retain the answer for retry.
+
 ## Validation
 
 ```sh
