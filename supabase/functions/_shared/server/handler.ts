@@ -14,15 +14,16 @@ type Dependencies = {
   authenticate(request: Request): Promise<{ id: string } | null>;
   repository(request: Request): Repository;
   agent: FitnessAgent | null;
-  allowedOrigin?: string;
+  allowedOrigins?: readonly string[];
   timeoutMs?: number;
 };
 export function createFitnessHandler(dependencies: Dependencies) {
+  const allowedOrigins = new Set(dependencies.allowedOrigins ?? []);
   return async (request: Request): Promise<Response> => {
     const origin = request.headers.get('Origin');
-    const cors: Record<string,string> = dependencies.allowedOrigin && origin === dependencies.allowedOrigin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
+    const cors: Record<string,string> = origin && allowedOrigins.has(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
     const respond = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors } });
-    if (origin && origin !== dependencies.allowedOrigin) return respond(403, { error: 'origin_forbidden' });
+    if (origin && !allowedOrigins.has(origin)) return respond(403, { error: 'origin_forbidden' });
     if (request.method === 'OPTIONS') return new Response(null, {status:204,headers:{...cors,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info'}});
     if (request.method !== 'POST') return respond(405, { error: 'method_not_allowed' });
     let user;

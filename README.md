@@ -37,9 +37,9 @@ Only browser-safe public Supabase keys belong here. Never use a service-role key
 
 ## Optional AI setup
 
-AI is implemented but **disabled by default**. Paid API use has not yet been authorized or verified for this fitness project. Do not reuse Travel's provider credentials or approvals.
+The user approved up to **$5 for synthetic testing**. The model (`gpt-4.1-mini`), enablement and approved frontend origins are hardcoded in `supabase/functions/fitness/index.ts`, as requested. Only `OPENAI_API_KEY` is a server secret. No key is present in source or browser configuration; without it, analysis is unavailable and manual capture/edit/copy still work.
 
-After authorization, configure server-only Edge secrets: `OPENAI_API_KEY`, `FITNESS_OPENAI_MODEL`, `FITNESS_AI_ENABLED=true`, and `FITNESS_ALLOWED_ORIGIN` equal to the exact frontend origin. For local testing place them in an ignored env file and run `supabase functions serve fitness --env-file <your-ignored-env-file>`. Never commit that file. For hosted use configure secrets on the separate fitness Supabase project.
+Configure a new fitness-specific `OPENAI_API_KEY` on the separate fitness Supabase project's Edge Function secrets page. For local testing, place only that credential in an ignored env file and run `supabase functions serve fitness --env-file <your-ignored-env-file>`. Never commit the file. Server-key setup has not been confirmed, and no paid model call has been made. Do not reuse Travel's credentials.
 
 The request sends the selected entry's note, saved details and conversation to OpenAI. One structured response is allowed, with no tools, retries, hosted conversations or SDK tracing; response storage is disabled. This does not override the provider's own processing policies. Use synthetic notes first. Validation rejects unsupported detail kinds and values absent from the supplied text/details. Model extraction can still need manual correction.
 
@@ -81,4 +81,8 @@ AI assisted implementation and review. The candidate should inspect and understa
 
 ## Delivery status
 
-This matching-stack version runs locally and has not been deployed. Source is now in the separate private repository [asawyers/fitness-capture-companion](https://github.com/asawyers/fitness-capture-companion), default branch `main`. A separate Vercel project `rito-labs/fitness-capture-companion` is created and linked, but has no deployment yet. Hosted Supabase setup, provider authorization and live evaluator-account verification remain outstanding. Evaluator source access must be arranged before submission. The historical owner-private Sites preview is a different revision and is not evidence that this assessment version is deployed. No assessment was submitted and no external people were messaged.
+The app is deployed at [fitness-capture-companion.vercel.app](https://fitness-capture-companion.vercel.app). Source is in the separate private repository [asawyers/fitness-capture-companion](https://github.com/asawyers/fitness-capture-companion), default branch `main`. Hosting uses Vercel project `rito-labs/fitness-capture-companion` and the user's separate Personal Supabase project `dsgswbvoifmfcscujfjr`.
+
+A bounded hosted check confirmed frontend HTTP 200, production-origin CORS preflight HTTP 204, and anonymous backend denial HTTP 401. The latest backend configuration update is therefore serving. The database migrations were applied, and the security advisor returned no findings after restricting a preinstalled public event-trigger function.
+
+Still incomplete: confirming the server API key, actual model extraction, hosted email-confirmation/evaluator login, browser/mobile/microphone verification, and evaluator access to private source. Local account isolation and persistence tests have passed; those are not substitutes for a completed hosted browser walkthrough. The historical owner-private Sites preview and Travel remain unchanged. No assessment was submitted or external people messaged.
