@@ -124,7 +124,7 @@ export function useFitness(){
   async function signIn(email:string,password:string){if(supabase)await authAction(()=>supabase!.auth.signInWithPassword({email,password}));}
   async function signUp(email:string,password:string){if(!supabase)return;await authAction(async()=>{const result=await supabase!.auth.signUp({email,password});if(!result.error&&!result.data.session)setNotice('Check your email to confirm the account, then sign in.');return result;});}
   async function signOut(){if(supabase)await authAction(()=>supabase!.auth.signOut());}
-  return{configured,authReady,user,entries,selected,loading,busy,analyzingEntries,error,notice,signIn,signUp,signOut,capture,select,reply,
+  return{configured,authReady,user,entries,selected,loading,busy,analyzingEntries,error,notice,clearError:()=>setError(''),signIn,signUp,signOut,capture,select,reply,
     saveDetails:(details:Detail[])=>savePatch({details},'Details saved.'),
     editNote:(note:string)=>savePatch({note},'Edited note saved. You can analyze it again when ready.'),
     setLogged:(logged:boolean)=>savePatch({logged},logged?'Marked as logged.':'Moved back to the inbox.'),

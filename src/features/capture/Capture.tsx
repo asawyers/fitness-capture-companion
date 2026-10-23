@@ -1,5 +1,6 @@
 import type { Kind } from '@domain/contracts';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Toast } from '../../components/Toast';
 import { VoiceInput } from './VoiceInput';
 import { KindIcon, Spinner } from '../../components/Feedback';
 export type CaptureProps = { busy: boolean; blocked: boolean; onSave(kind: Kind, note: string): Promise<boolean>; onRecording?(recording: boolean): void };
@@ -36,8 +37,8 @@ export function Capture({ busy, blocked, onSave, onRecording }: CaptureProps) {
     <div className="kind-switch" role="group" aria-label="Note type">{(['meal', 'workout'] as const).map(value => <button type="button" key={value} className={`kind-${value}`} aria-pressed={kind === value} disabled={busy || submitting || recording} onClick={() => setKind(value)}><KindIcon kind={value} />{value === 'meal' ? 'Meal' : 'Workout'}</button>)}</div>
     <form onSubmit={event => void submit(event)}>
       <VoiceInput compact rows={1} label="Your note" value={note} onChange={setNote} onRecording={setRecording} disabled={busy || blocked} placeholder={kind === 'meal' ? 'Two eggs and toast…' : 'Squats: 3 sets of 5 at 60 kg…'} actions={<button type="submit" className="button primary" disabled={busy || submitting || blocked || recording || !note.trim() || overLimit}>{(busy || submitting) && <Spinner />}{busy || submitting ? 'Saving…' : 'Save note'}</button>} />
-      {overLimit && <p className="inline-error" role="alert">Keep your note within 4,000 characters. Your text is still here.</p>}
-      {saveError && <p className="inline-error" role="alert">{saveError}</p>}
+      {overLimit && <Toast message="Keep your note within 4,000 characters. Your text is still here." tone="error" />}
+      {saveError && <Toast key={saveError} message={saveError} tone="error" onDismiss={() => setSaveError('')} />}
       <p className="capture-hint muted small">Notes save first. OpenAI processes note text and replies to prepare details.</p>
       {blocked && <p className="small">Save or discard your review changes before saving another note.</p>}
     </form>

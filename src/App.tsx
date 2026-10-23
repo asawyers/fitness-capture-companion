@@ -3,9 +3,9 @@ import type { Entry } from '@domain/contracts';
 import { useFitness } from './lib/use-fitness';
 import { Capture } from './features/capture/Capture';
 import { EntryReview } from './features/review/EntryReview';
-import { CircleAlert, Inbox, PencilLine, RefreshCw } from 'lucide-react';
+import { Inbox, PencilLine, RefreshCw } from 'lucide-react';
 import { KindIcon, Spinner, StatusIcon } from './components/Feedback';
-import { ConfirmationToast } from './components/ConfirmationToast';
+import { Toast } from './components/Toast';
 
 function AuthForm({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
   const [email, setEmail] = useState('');
@@ -16,7 +16,7 @@ function AuthForm({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
       {!fitness.configured ? <p role="status" className="setup-note">Sign-in needs the app’s Supabase connection. Follow the project setup guide to connect this local app.</p> : <form onSubmit={async event => { event.preventDefault(); if (signingUp) await fitness.signUp(email.trim(), password); else await fitness.signIn(email.trim(), password); }}>
         <label className="field-label">Email<input type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} disabled={fitness.busy} /></label>
         <label className="field-label">Password<input type="password" autoComplete={signingUp ? 'new-password' : 'current-password'} minLength={6} required value={password} onChange={event => setPassword(event.target.value)} disabled={fitness.busy} /></label>
-        {fitness.error && <p className="inline-error" role="alert">{fitness.error}</p>}{fitness.notice && <p className="small" role="status">{fitness.notice}</p>}
+        {fitness.error && <Toast key={fitness.error} message={fitness.error} tone="error" onDismiss={fitness.clearError} />}{fitness.notice && <p className="small" role="status">{fitness.notice}</p>}
         <button className="button primary auth-submit" type="submit" disabled={fitness.busy || !fitness.authReady}>{fitness.busy && <Spinner />}{fitness.busy ? 'Please wait…' : signingUp ? 'Create account' : 'Sign in'}</button>
         <button className="text-button auth-mode" type="button" disabled={fitness.busy} onClick={() => setSigningUp(current => !current)}>{signingUp ? 'Already have an account? Sign in' : 'New here? Create an account'}</button>
       </form>}
@@ -85,8 +85,8 @@ function Notebook({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
   return <div className="notebook" data-mobile-view={mobileView}>
     <header className="app-header"><div className="brand"><span className="brand-mark" aria-hidden="true">f<span>.</span></span><h1>Fitness notebook</h1></div><div className="account"><span className="small muted">{fitness.user?.email}</span><button type="button" className="text-button" disabled={navigationBlocked} onClick={() => void fitness.signOut()}>Sign out</button></div></header>
     <nav className="mobile-navigation" aria-label="Notebook"><button type="button" aria-pressed={mobileView === 'capture'} disabled={navigationBlocked} onClick={() => navigate('capture')}><PencilLine className="ui-icon" aria-hidden="true" size={16} />Capture</button><button type="button" aria-pressed={mobileView !== 'capture'} disabled={navigationBlocked} onClick={() => navigate('inbox')}><Inbox className="ui-icon" aria-hidden="true" size={16} />Inbox <span>{toLogCount}</span></button></nav>
-    {fitness.error && <div className="app-message error" role="alert"><CircleAlert className="ui-icon" aria-hidden="true" size={18} />{fitness.error}</div>}
-    {fitness.notice && !fitness.error && <ConfirmationToast key={fitness.notice} message={fitness.notice} />}
+    {fitness.error && <Toast key={fitness.error} message={fitness.error} tone="error" onDismiss={fitness.clearError} />}
+    {fitness.notice && !fitness.error && <Toast key={fitness.notice} message={fitness.notice} />}
     {reviewDirty && <p className="navigation-cue" role="status">Save or discard your review changes before navigating. Your draft is still here.</p>}
     {captureRecording && <p className="navigation-cue" role="status">Stop recording before navigating. Your capture stays here.</p>}
     <main className="notebook-grid"><div className="main-column">

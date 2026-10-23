@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Toast } from '../../components/Toast';
 import { useVoice } from './use-voice';
 
 export function VoiceInput({ value, onChange, label, placeholder, disabled = false, compact = false, rows, onRecording, actions, onSubmit }: {
@@ -23,7 +24,7 @@ export function VoiceInput({ value, onChange, label, placeholder, disabled = fal
   // Status is also reflected on the textarea so callers can safely review before submitting.
   return <div className={`voice-input ${compact ? 'compact' : ''}`}>
     <label className="field-label"><span className="voice-label">{label}</span>
-      <textarea ref={textarea} aria-label={label} value={value} maxLength={4000} placeholder={placeholder} disabled={disabled || recording}
+      <textarea ref={textarea} aria-label={label} aria-invalid={value.length > 4000 || undefined} value={value} maxLength={4000} placeholder={placeholder} disabled={disabled || recording}
         onChange={event => onChange(event.target.value)} onKeyDown={event => {
           if (onSubmit && !disabled && !recording && event.key === 'Enter' && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && !event.nativeEvent.isComposing) {
             event.preventDefault(); onSubmit();
@@ -43,6 +44,6 @@ export function VoiceInput({ value, onChange, label, placeholder, disabled = fal
       <div className="button-row"><button type="button" className="button primary" onClick={start} disabled={disabled}>Start recording</button>
         <button type="button" className="button subtle" onClick={() => setDisclose(false)}>Cancel</button></div>
     </div>}
-    {voice.error && <p role="alert" className="inline-error">{voice.error}</p>}
+    {voice.error && <Toast key={voice.error} message={voice.error} tone="error" onDismiss={voice.clearError} />}
   </div>;
 }

@@ -105,3 +105,17 @@ test('a denied session keeps typed text, retry uses a fresh session, and unmount
   expect(sessions[1].abort).toHaveBeenCalledOnce();
   expect(sessions[1].onresult).toBeNull();
 });
+
+test('dismissing an error does not hide the same failure on the next recording attempt', () => {
+  const start = vi.spyOn(BrowserSpeech.prototype, 'start').mockImplementation(() => { throw new Error('device busy'); });
+  try {
+    render(<Capture busy={false} blocked={false} onSave={vi.fn()} />);
+    begin();
+    expect(screen.getByRole('alert').textContent).toContain('could not start');
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss error' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Record' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }));
+    expect(screen.getByRole('alert').textContent).toContain('could not start');
+  } finally { start.mockRestore(); }
+});

@@ -12,7 +12,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); voice.st
 const voice = vi.hoisted(() => ({ instances: 0, status: 'idle', supported: true, error: '', record: vi.fn(), stop: vi.fn() }));
 vi.mock('../../src/features/capture/use-voice', () => ({ useVoice: () => { const [instance] = useState(() => voice.instances++); return { ...voice, status: instance === 0 ? voice.status : 'idle' }; } }));
 function ready() {
-  hook.current = { configured: true, authReady: true, user: { id: 'account-one', email: 'one@example.test' }, entries: [], selected: null, analyzingEntries: [], loading: false, busy: false, error: '', notice: '', signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(), capture: vi.fn().mockResolvedValue(false), select: vi.fn(), reply: vi.fn(), saveDetails: vi.fn(), editNote: vi.fn(), setLogged: vi.fn(), skipQuestion: vi.fn(), analyze: vi.fn(), refresh: vi.fn() };
+  hook.current = { configured: true, authReady: true, user: { id: 'account-one', email: 'one@example.test' }, entries: [], selected: null, analyzingEntries: [], loading: false, busy: false, error: '', notice: '', clearError: vi.fn(), signIn: vi.fn(), signUp: vi.fn(), signOut: vi.fn(), capture: vi.fn().mockResolvedValue(false), select: vi.fn(), reply: vi.fn(), saveDetails: vi.fn(), editNote: vi.fn(), setLogged: vi.fn(), skipQuestion: vi.fn(), analyze: vi.fn(), refresh: vi.fn() };
 }
 
 test('changing accounts clears the previous account’s capture draft', () => {
@@ -183,7 +183,7 @@ test('confirmations toast without moving content, pause for focus, and dismiss w
   hook.current.notice = 'Reply saved.';
   const view = render(<App />);
   expect(view.container.querySelector('.app-message')).toBeNull();
-  expect(view.container.querySelector('.confirmation-toast [role="status"]')?.textContent).toBe('Reply saved.');
+  expect(document.querySelector('.toast [role="status"]')?.textContent).toBe('Reply saved.');
   const dismiss = screen.getByRole('button', { name: 'Dismiss confirmation' });
   fireEvent.focus(dismiss);
   act(() => vi.advanceTimersByTime(8000));

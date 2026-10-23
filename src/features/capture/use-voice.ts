@@ -23,5 +23,5 @@ export function useVoice() {
       onTranscript: text => onDraft(text ? [draft.trimEnd(), text].filter(Boolean).join('\n') : draft),
     });
   }
-  return { supported, status, error, record, stop: () => active.current?.stop() };
+  return { supported, status, error, clearError: () => setError(''), record, stop: () => active.current?.stop() };
 }

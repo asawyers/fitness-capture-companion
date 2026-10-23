@@ -51,7 +51,7 @@ System keyboard dictation can enter text directly into the note or reply field; 
 
 Desktop capture is a small, expanding one-line composer in the left column directly above the inbox; selected-entry review starts at the top of the right column. Mobile uses Capture/Inbox navigation and Back to inbox; drafts stay mounted while switching views. Review puts structured details and optional clarification before copy/log actions, with saved notes and conversation available in expandable sections.
 
-Meal/workout icons and labeled status colors help scan the inbox. Success confirmations use dismissible toasts that disappear after five seconds and pause for hover or keyboard focus. Errors remain visible. Loading spinners and short save/copy feedback respect the device's reduced-motion preference. Icons are decorative; text labels remain available to assistive technology.
+Meal/workout icons and labeled status colors help scan the inbox. Success confirmations use dismissible toasts that disappear after five seconds and pause for hover or keyboard focus. All app errors, including recording and form validation failures, use red dismissible toasts that remain until dismissed. Multiple notifications stack outside the forms. Loading spinners and short save/copy feedback respect the device's reduced-motion preference. Icons are decorative; text labels remain available to assistive technology.
 
 Optional replies submit with Save reply or Enter (Shift+Enter inserts a new line). The question panel immediately shows Saving reply, then Preparing details while background analysis runs. Repeat submissions are blocked; failed saves retain the answer for retry.
 

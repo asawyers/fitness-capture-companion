@@ -178,13 +178,39 @@ test('success appears as a dismissible fixed toast without shifting the notebook
   const beforeScroll = await page.evaluate(() => scrollY);
   await page.getByRole('textbox', { name: 'Your note', exact: true }).fill('Synthetic lunch');
   await page.getByRole('button', { name: 'Save note', exact: true }).click();
-  const toast = page.locator('.confirmation-toast');
+  const toast = page.locator('.toast');
   await expect(toast.getByRole('status')).toHaveText('Note saved.');
-  expect(await toast.evaluate(element => getComputedStyle(element).position)).toBe('fixed');
+  expect(await page.locator('#toast-viewport').evaluate(element => getComputedStyle(element).position)).toBe('fixed');
   const after = await page.locator('.capture-panel').boundingBox();
   expect(after!.y + await page.evaluate(() => scrollY)).toBe(before!.y + beforeScroll);
   await page.screenshot({ path: '/tmp/fitness-confirmation-toast.png', fullPage: true });
   await expect(page.locator('.app-message')).toHaveCount(0);
   await page.getByRole('button', { name: 'Dismiss confirmation' }).click();
   await expect(toast).toHaveCount(0);
+});
+
+test('recording errors appear in persistent toasts without expanding capture', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'SpeechRecognition', { value: class {
+      onerror?: (event: { error: string }) => void;
+      start() { this.onerror?.({ error: 'network' }); }
+      stop() {}
+      abort() {}
+    } });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Your note', exact: true }).fill('Keep this draft');
+  const before = await page.locator('.capture-panel').boundingBox();
+  await page.getByRole('button', { name: 'Record', exact: true }).click();
+  await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+  await expect(page.locator('.toast.error').getByRole('alert')).toContainText('could not reach its speech service');
+  const after = await page.locator('.capture-panel').boundingBox();
+  expect(after!.height).toBe(before!.height);
+  await expect(page.locator('.capture-panel .toast, .capture-panel .inline-error')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'Your note', exact: true })).toHaveValue('Keep this draft');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/fitness-error-toast.png', fullPage: true });
+  await page.getByRole('button', { name: 'Dismiss error', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
