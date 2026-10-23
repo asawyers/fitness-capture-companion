@@ -29,7 +29,7 @@ The workflow harness's final logout attempt received403/session_not_found after 
 
 - Source: https://github.com/asawyers/fitness-capture-companion (main)
 - App: https://fitness-capture-companion.vercel.app
-- Vercel project: rito-labs/fitness-capture-companion
+- Vercel project: rito-labs-2cc43421/fitness-capture-companion
 - Fitness Personal Supabase project: dsgswbvoifmfcscujfjr
 
 Publication is verified against the source commit and live frontend asset after deployment. Exact final commit/deployment identifiers are reported with delivery. Setup and run commands are in README.md.

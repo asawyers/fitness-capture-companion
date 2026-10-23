@@ -81,8 +81,10 @@ AI assisted implementation and review. The candidate should inspect and understa
 
 ## Delivery status
 
-The app is deployed at [fitness-capture-companion.vercel.app](https://fitness-capture-companion.vercel.app). Source is in the separate private repository [asawyers/fitness-capture-companion](https://github.com/asawyers/fitness-capture-companion), default branch `main`. Hosting uses Vercel project `rito-labs/fitness-capture-companion` and the user's separate Personal Supabase project `dsgswbvoifmfcscujfjr`.
+The production URL target is [fitness-capture-companion.vercel.app](https://fitness-capture-companion.vercel.app). Source is in the separate private repository [asawyers/fitness-capture-companion](https://github.com/asawyers/fitness-capture-companion), default branch `main`. Hosting uses Vercel project `rito-labs-2cc43421/fitness-capture-companion` and the user's separate Personal Supabase project `dsgswbvoifmfcscujfjr`.
 
 A bounded hosted check confirmed frontend HTTP 200, production-origin CORS preflight HTTP 204, and anonymous backend denial HTTP 401. The latest backend configuration update is therefore serving. The database migrations were applied, and the security advisor returned no findings after restricting a preinstalled public event-trigger function.
 
 Verified through hosted APIs: synthetic sign-in, original capture, deduplication, AI extraction, same-entry clarification, persisted conversations, editing, logged/undo, restored sessions, and cross-account entry/chat denial. Deliberate version/ownership conflicts use HTTP409 to avoid transaction retries. Still incomplete: hosted email-confirmation/evaluator signup, browser/mobile/microphone verification, and evaluator access to private source. API checks are not substitutes for a completed browser walkthrough. The historical owner-private Sites preview and Travel remain unchanged. No assessment was submitted or external people messaged.
+
+Hosting account: `ajsawyers22`, Rito Labs (`rito-labs-2cc43421`). The earlier alternate-account Vercel project was deleted at the user’s request. The separate GitHub source and Personal Supabase backend remain in place.
