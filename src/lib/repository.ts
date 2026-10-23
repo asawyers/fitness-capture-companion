@@ -10,7 +10,7 @@ export function mapMessage(value:unknown):Message {
 }
 function databaseError(error:{message?:string;code?:string}|null):void {
   if(!error)return;
-  if(error.message?.includes('conflict')||error.code==='40001')throw new Error('This entry changed. Reload it before saving; your draft is still here.');
+  if(error.message?.includes('conflict')||(error.code==='40001'||error.code==='PT409'))throw new Error('This entry changed. Reload it before saving; your draft is still here.');
   if(error.code==='42501')throw new Error('You do not have access to this entry. Sign in again.');
   throw new Error(error.message?.includes('version')?'This entry changed. Reload it before saving.':'Could not save your entry. Your draft is still here. Please try again.');
 }

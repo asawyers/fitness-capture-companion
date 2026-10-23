@@ -1,43 +1,35 @@
-# Validation — matching-stack fitness app
+# Fitness validation
 
-Verified locally on 2026-10-23. All notes, accounts and speech fixtures are synthetic.
+## Verified
 
-- Initial full suite: **51 tests passed across 11 files**, with the real local account test enabled. After deployment compatibility changes: **62 ordinary tests pass**, and the real local integration is separately re-run (the ordinary run skips it). Production TypeScript/Vite build passes. Bundle-size warning remains (~552 kB JavaScript before gzip).
-- Domain/server/UI/client boundary tests pass, including auth denial, fake-provider timeout/refusal/invalid output, same-entry clarification, original-note preservation, copy/log separation, voice failure/retry/cleanup and draft races.
-- Actual local Supabase Auth/PostgREST integration passes: two accounts, capture idempotency, cross-owner entry/message denial, saved reply idempotency, editing, original preservation, explicit logged/undo, stale-write rejection and a fresh login restoring conversation/details.
-- Actual disabled Edge endpoint returns 503 analysis_disabled with an authenticated user. No paid model invocation was made.
-- PostgreSQL rollback fixtures pass: owner RLS, immutable original, stale user/model rejection, duplicate reply/claim prevention, logged/undo retaining pending clarification, expired processing takeover and rejection of a replaced worker.
-- Edge Deno typecheck passes with manual node_modules resolution.
-- Specification and quality reviews found and prompted fixes for draft-clearing races, hidden reply drafts, stale selection/list updates, log-state clarification loss and unrecoverable processing claims.
+- Ordinary suite: 88 tests pass; the opt-in local HTTP account test is skipped in the ordinary run. That local account test passed separately earlier.
+- TypeScript/Vite production build and Deno Edge typecheck pass. The build retains a roughly552kB JavaScript bundle warning before gzip.
+- Real local PostgreSQL fixtures cover owner RLS, immutable originals, idempotency, stale writes/results, persisted chat, logging/undo and recovery of interrupted analysis.
+- Hosted synthetic sign-in, immediate original-note saving and capture deduplication passed.
+- Live OpenAI meal extraction preserved exactly the supplied foods and left unknown quantities empty. A tested deterministic fallback supplies one optional question when the model omits it.
+- A short clarification updated the same meal and persisted its conversation without duplicate replies.
+- Manual corrections preserved the original note. Explicit logged/undo persisted. A fresh sign-in restored the conversation.
+- Live mixed strength/cardio extraction preserved recorded sets, reps, weight, duration and distance.
+- Hosted second-account reads returned no other user's entries/messages. Cross-account writes returned prompt denial after the application-conflict fix.
+- The initial provider HTTP429 was resolved by the user. No additional paid AI calls are part of source/frontend publication.
+- Hosted Edge version5 and the application-conflict migration were deployed. Deliberate application conflicts use PT409; real database serialization failures retain their normal handling. Owner/version predicates remain intact.
+- Frontend public HTTP200, production-origin preflight204 and anonymous Edge401 were observed.
 
-## Incomplete verification
+The workflow harness's final logout attempt received403/session_not_found after an earlier global logout had already revoked that session. The preceding workflow assertions passed; no paid run was repeated for that cleanup-only response.
 
-- Live browser walkthrough and responsive viewport checks: started in the user's local Brave browser, but repeated connection timeouts prevented completion. Browser retries/permission attempts were stopped. No screenshot is claimed as completed-flow proof.
-- Real microphone/vendor speech service: not exercised. Simulated lifecycle tests cover failures/retry/cleanup; they do not establish hardware compatibility.
-- Live OpenAI extraction: not exercised; the $5 synthetic-testing budget is approved, but server-key setup is unconfirmed. Fake-provider tests verify orchestration, not model accuracy.
-- Private GitHub source is verified at https://github.com/asawyers/fitness-capture-companion (`main`). The frontend is deployed at https://fitness-capture-companion.vercel.app; private source still requires evaluator access. Old owner-private Sites preview stays unchanged.
+## Remaining limits
 
-Run commands and environment setup are in README.md. Local integration creates synthetic accounts in the isolated local stack; fixtures run inside rolled-back transactions. Do not point the integration test at a hosted database.
+- Browser walkthrough, responsive viewport behavior and actual microphone/vendor speech compatibility remain unverified. Browser automation stays paused.
+- Hosted email-confirmation/evaluator signup remains unverified. Hosted API checks used temporary seeded synthetic accounts; verification settings were not disabled.
+- Source is private; evaluator access must be arranged separately.
+- The latest read-only check found2 synthetic QA users,2 entries and7 messages. They are deliberately left untouched by this publication task.
+- No assessment was submitted, no external people were messaged, and Travel was not modified.
 
-Deployment preparation: official Supabase key migration guidance prompted support for `SUPABASE_PUBLISHABLE_KEYS.default` and in-function JWT verification. Authentication denial remains tested; hosted backend is deployed; full signed-in hosted model verification remains pending.
+## Source and hosting
 
-## Bounded hosted status check
+- Source: https://github.com/asawyers/fitness-capture-companion (main)
+- App: https://fitness-capture-companion.vercel.app
+- Vercel project: rito-labs/fitness-capture-companion
+- Fitness Personal Supabase project: dsgswbvoifmfcscujfjr
 
-- Frontend: HTTP 200 without Vercel login.
-- Production-origin Edge preflight: HTTP 204 with exact allowed origin, confirming the hardcoded-origin backend update landed.
-- Anonymous Edge POST: HTTP 401 unauthorized.
-- Fitness-only migrations applied to Personal project dsgswbvoifmfcscujfjr; security advisor returned no findings after event-trigger execution grants were restricted.
-- Latest interrupted hosted SQL fixture execution returned no result and is not counted as passing.
-- Model/origin/enablement configuration is in code. Only OPENAI_API_KEY needs server secret storage. No paid provider call is claimed.
-
-Latest ordinary suite: **73 passed, 1 local-HTTP test skipped**. Production build and Deno Edge typecheck pass. The earlier explicit local-HTTP run passed separately.
-
-## Latest hosted AI check
-
-The user confirmed the API key and had already approved the $5 synthetic-testing budget. Two temporary synthetic accounts successfully signed in through hosted Supabase Auth. Immediate original-note saving and capture deduplication passed. A cross-owner HTTP check timed out and was stopped without repetition. The saved synthetic note was reused for the independent analysis check.
-
-The first analysis response was generic HTTP502. Tested safe diagnostics were deployed once; one instrumented request identified phase `agent`, category `provider`, upstream HTTP429. The provider's response did not distinguish rate limiting from quota exhaustion. No more provider calls are being attempted. No successful extraction/clarification/workout AI result is claimed.
-
-Diagnostics disclose only phase/category/whitelisted code/status; they exclude notes, credentials and raw errors. Backend46/46 tests, TypeScript and Deno checks passed. A nearby capture notice now explains OpenAI processes saved notes and replies.
-
-The cleanup request targets only the two temporary QA users and their cascading synthetic entries. Its response was interrupted by new user input; cleanup completion is unconfirmed and has not been retried. No real user data was involved. Browser automation remains paused.
+Publication is verified against the source commit and live frontend asset after deployment. Exact final commit/deployment identifiers are reported with delivery. Setup and run commands are in README.md.

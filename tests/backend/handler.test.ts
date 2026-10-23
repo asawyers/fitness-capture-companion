@@ -42,9 +42,9 @@ describe('fitness edge boundary', () => {
     const response = await createFitnessHandler({ authenticate: async () => ({ id }), agent, repository: () => repository })(request());
     expect(response.status).toBe(502); expect(repository.fail).toHaveBeenCalledOnce(); expect(repository.apply).not.toHaveBeenCalled();
   });
-  it('rejects a stale result without overwriting a user edit', async () => {
+  it.each(['40001','PT409'])('rejects a stale %s result without overwriting a user edit', async (code) => {
     const { repository, agent } = setup();
-    vi.mocked(repository.apply).mockRejectedValue(Object.assign(new Error('conflict'), {code:'40001'}));
+    vi.mocked(repository.apply).mockRejectedValue(Object.assign(new Error('conflict'), {code}));
     expect((await createFitnessHandler({ authenticate: async () => ({ id }), agent, repository: () => repository })(request())).status).toBe(409);
   });
   it('rejects foods and portions absent from user text and saved details', async () => {

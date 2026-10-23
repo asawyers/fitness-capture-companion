@@ -9,7 +9,7 @@ do $$declare c jsonb; e public.fitness_entries; begin
   begin
     perform public.fitness_claim_analysis('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee4',1);
     raise exception 'unexpired lease was stolen';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   -- Simulate an interrupted request without waiting or making an AI request.
   update public.fitness_entries set updated_at=now()-interval '61 seconds' where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4';
   c:=public.fitness_claim_analysis('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee4',1);
@@ -17,7 +17,7 @@ do $$declare c jsonb; e public.fitness_entries; begin
   begin
     perform public.fitness_apply_analysis('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4','dddddddd-dddd-4ddd-8ddd-ddddddddddd4',1,'{"details":[],"question":null,"reply":"Old worker."}');
     raise exception 'replaced worker result was accepted';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   perform public.fitness_fail_analysis('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4','dddddddd-dddd-4ddd-8ddd-ddddddddddd4',1);
   if (select analysis_status from public.fitness_entries where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4')<>'processing' then raise exception 'old worker failed new claim'; end if;
   select * into e from public.fitness_apply_analysis('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee4',1,'{"details":[{"type":"food","name":"rice","amount":""}],"question":{"itemIndex":0,"field":"amount","text":"How much rice?"},"reply":"How much rice?"}');

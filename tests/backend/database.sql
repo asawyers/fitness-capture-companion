@@ -6,10 +6,18 @@ select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111'
 select public.fitness_create_capture('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','meal','rice','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
 do $$declare e public.fitness_entries; c jsonb; begin
   if (select count(*) from public.fitness_messages) <> 1 then raise exception 'original message was not saved'; end if;
+  begin
+    perform public.fitness_create_capture('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','meal','different note','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+    raise exception 'conflicting capture identity accepted';
+  exception when sqlstate 'PT409' then null; end;
   select * into e from public.fitness_append_reply('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','cccccccc-cccc-4ccc-8ccc-cccccccccccc','one cup',1);
   if e.version <> 2 or e.original_note <> 'rice' then raise exception 'reply lost version/original'; end if;
   select * into e from public.fitness_append_reply(e.id,'cccccccc-cccc-4ccc-8ccc-cccccccccccc','one cup',1);
   if e.version <> 2 or (select count(*) from public.fitness_messages) <> 2 then raise exception 'reply duplicated'; end if;
+  begin
+    perform public.fitness_append_reply(e.id,'cccccccc-cccc-4ccc-8ccc-cccccccccccc','different reply',2);
+    raise exception 'conflicting message identity accepted';
+  exception when sqlstate 'PT409' then null; end;
   c := public.fitness_claim_analysis(e.id,'dddddddd-dddd-4ddd-8ddd-dddddddddddd',2);
   if not (c->>'claimed')::boolean then raise exception 'claim failed'; end if;
   c := public.fitness_claim_analysis(e.id,'dddddddd-dddd-4ddd-8ddd-dddddddddddd',2);
@@ -18,12 +26,12 @@ do $$declare e public.fitness_entries; c jsonb; begin
   begin
     perform public.fitness_apply_analysis(e.id,'dddddddd-dddd-4ddd-8ddd-dddddddddddd',2,'{"details":[{"type":"food","name":"rice","amount":"one cup"}],"question":null,"reply":"Saved."}');
     raise exception 'stale model result accepted';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   if not e.logged or e.version <> 3 then raise exception 'explicit logging failed'; end if;
   begin
     perform public.fitness_save_entry(e.id,2,'{"note":"stale"}');
     raise exception 'stale user edit accepted';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   begin
     update public.fitness_entries set original_note = 'changed' where id=e.id;
     raise exception 'original is mutable';
@@ -35,7 +43,7 @@ do $$begin
   begin
     perform public.fitness_append_reply('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','steal',3);
     raise exception 'cross-owner reply accepted';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   begin
     insert into public.fitness_messages(id,entry_id,owner_id,role,content,sequence) values ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','22222222-2222-4222-8222-222222222222','user','steal',3);
     raise exception 'cross-owner message accepted';

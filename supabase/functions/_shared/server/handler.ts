@@ -1,5 +1,6 @@
 import { AnalysisRequestSchema, AnalysisResultSchema, type AnalysisRequest, type AnalysisResult } from '../domain/contracts.ts';
 import { failureDiagnostic, type FailureDiagnostic, type FailurePhase } from './diagnostics.ts';
+import { detailLabel, missingFields } from '../domain/entries.ts';
 
 export type StoredEntry = { id: string; kind: string; note: string; details: unknown[]; pending_question: unknown; version: number; [key: string]: unknown };
 export type StoredMessage = { role: 'user' | 'assistant'; content: string };
@@ -63,7 +64,7 @@ export function createFitnessHandler(dependencies: Dependencies) {
       const diagnostic = failureDiagnostic(phase,error);
       try { (dependencies.reportFailure ?? ((safe) => console.warn('fitness_analysis_failure',safe)))(diagnostic); } catch { /* Diagnostics must not change the failure response. */ }
       if (claimed) { try { await repository.fail(body); } catch { /* A stale result must never modify a newer version. */ } }
-      const conflict = typeof error === 'object' && error !== null && 'code' in error && error.code === '40001';
+      const conflict = typeof error === 'object' && error !== null && 'code' in error && (error.code === '40001' || error.code === 'PT409');
       return respond(conflict ? 409 : 502, { error: conflict ? 'conflict' : 'analysis_failed', diagnostic });
     }
   };
@@ -76,6 +77,10 @@ function validateResult(entry: StoredEntry, messages: StoredMessage[], result: A
     for (const [key,value] of Object.entries(detail)) {
       if (key !== 'type' && value && !evidence.includes(value.toLocaleLowerCase())) throw new Error('Unstated detail');
     }
+  }
+  if (!result.question) {
+    const itemIndex = result.details.findIndex((detail) => detailLabel(detail).trim() && missingFields(detail).length > 0);
+    if (itemIndex >= 0) result.question = { itemIndex, field: missingFields(result.details[itemIndex])[0], text: 'What quantity did you record?' };
   }
   if (result.question) {
     const {itemIndex, field} = result.question;

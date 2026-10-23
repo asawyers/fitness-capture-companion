@@ -47,4 +47,11 @@ describe('sanitized analysis failure diagnostics',()=>{
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({error:'analysis_failed',diagnostic:{phase:'agent',category:'unknown'}});
   });
+  it('retains a sanitized application conflict code separately from real serialization failures',async()=>{
+    const {repository,reportFailure,result}=setup();
+    repository.apply=async()=>{throw {code:'PT409',message:'PRIVATE NOTE'};};
+    const response=await createFitnessHandler({authenticate:async()=>({id}),repository:()=>repository,agent:async()=>result,reportFailure})(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({error:'conflict',diagnostic:{phase:'apply',category:'database',providerCode:'PT409'}});
+  });
 });

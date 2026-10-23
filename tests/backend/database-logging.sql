@@ -18,7 +18,7 @@ do $$declare e public.fitness_entries; begin
   begin
     perform public.fitness_apply_analysis(e.id,'dddddddd-dddd-4ddd-8ddd-ddddddddddd3',e.version-1,'{"details":[],"question":null,"reply":"Stale worker."}');
     raise exception 'logging allowed a stale worker result';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   select * into e from public.fitness_save_entry(e.id,e.version,'{"pendingQuestion":null}');
   if e.pending_question is not null then raise exception 'explicit skip did not clear question'; end if;
 end $$;
