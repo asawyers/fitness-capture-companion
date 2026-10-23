@@ -1,86 +1,84 @@
 # Fitness Capture Companion
 
-A small TypeScript full-stack assessment project: record a private meal/workout note now, review its details later, and copy plain text into a separate tracking app. It is a new, isolated project. Travel Recovery Companion is not a dependency and was not changed.
+A deliberately small assessment project: save a private meal or workout note, optionally clarify its details, then copy it into your usual tracker. Copying never marks a note logged; that is a separate action.
 
-## What works
+## Stack and boundaries
 
-- Lightweight ChatGPT sign-in, server-side ownership checks on every read and write, durable D1/SQLite storage.
-- Text capture and browser speech recognition → editable transcript → save.
-- Original note saved immediately; optional food serving amounts and workout fields can be completed later on the same entry.
-- Strength (exercise, sets, reps, weight) and cardio (activity, duration, distance).
-- Review and edit notes or individual fields, plain-text copy/paste, explicit mark-as-logged and move-back-to-inbox actions.
-- Copying never marks an entry logged. Unsaved edits must be saved/discarded before copying or marking logged.
-- Safe capture retry using a client UUID, stale-write protection using versions, useful errors retaining the draft.
+React 19, Vite, TypeScript, Tailwind, Supabase email/password Auth and Postgres, a TypeScript/Deno Edge Function, Zod, and one bounded OpenAI Agents SDK response. Vitest tests the domain, server, UI and client integration. This is a separate fitness project; Travel Recovery Companion is not a dependency and was not modified.
 
-There is no nutrition estimation, nutrition database, coaching, dashboard, photo capture, third-party fitness integration, or profile/settings surface. File download was removed at the user's request.
+The app supports foods/amounts, strength exercise/sets/reps/weight, and cardio activity/duration/distance. Entries and their user/assistant conversations persist under the signed-in account. Notes save before AI runs. Follow-ups update the same entry; all structured fields remain editable. Unknown quantities stay empty. Export is copy/paste only.
+
+No nutrition estimates, coaching, photos, dashboards, fitness integrations or profile/settings features.
 
 ## Run locally
 
-Use Node **24+** (tests use Node's native TypeScript and SQLite support), npm, and Git. No API keys or paid providers are needed.
+Prerequisites: Node **24**, npm, Docker, Supabase CLI and Deno. Use a separate Supabase project for hosted use. No OpenAI key is needed for capture, account persistence, editing or copying.
 
 ```sh
 npm ci
-npm run build
-npm run db:local
-npm run dev -- --port 5178 --hostname 127.0.0.1
+supabase start --exclude realtime,storage-api,imgproxy,postgres-meta,studio,logflare,vector,supavisor
+supabase migration up --local
+cp .env.example .env.local
+# Fill the three browser-safe values below from your LOCAL Supabase status.
+npm run dev
 ```
 
-Open `http://127.0.0.1:5178`. Click **Sign in with ChatGPT**. The portable starter simulates a synthetic local account (`seedy@sites.test`) on loopback only; it is not a production authentication method. It is excluded from production builds. Never expose the development server publicly. Hosted sign-in/session verification is owned by Sites dispatch, which supplies trusted per-Site user IDs. User emails are not database ownership keys.
+Open `http://127.0.0.1:5173`. Create a synthetic email/password account. The local Supabase stack uses project ID `fitness-capture-assessment` and ports 55420–55430; it does not share Travel's database. Local email confirmation is disabled in the development config; hosted verification settings must be chosen and tested separately.
 
-The build generates `dist/server/wrangler.json`, needed for the local migration. `npm run db:local` applies migrations via Wrangler's migration ledger; it is safe to rerun. Local database files are ignored under `.wrangler/state` and are separate from the hosted database. Sign out from the UI to inspect the anonymous state. `npm start` previews the compiled Worker; it does not provide the local simulated sign-in.
+`.env.local` (ignored):
+
+```dotenv
+VITE_SUPABASE_URL=http://127.0.0.1:55421
+VITE_SUPABASE_PUBLISHABLE_KEY=<local anon or publishable key>
+VITE_FITNESS_API_URL=http://127.0.0.1:55421/functions/v1/fitness
+```
+
+Only browser-safe public Supabase keys belong here. Never use a service-role key or OpenAI key in a `VITE_` variable. The database and Edge Function verify the actual user; a public key does not grant access to private entries.
+
+## Optional AI setup
+
+AI is implemented but **disabled by default**. Paid API use has not yet been authorized or verified for this fitness project. Do not reuse Travel's provider credentials or approvals.
+
+After authorization, configure server-only Edge secrets: `OPENAI_API_KEY`, `FITNESS_OPENAI_MODEL`, `FITNESS_AI_ENABLED=true`, and `FITNESS_ALLOWED_ORIGIN` equal to the exact frontend origin. For local testing place them in an ignored env file and run `supabase functions serve fitness --env-file <your-ignored-env-file>`. Never commit that file. For hosted use configure secrets on the separate fitness Supabase project.
+
+The request sends the selected entry's note, saved details and conversation to OpenAI. One structured response is allowed, with no tools, retries, hosted conversations or SDK tracing; response storage is disabled. This does not override the provider's own processing policies. Use synthetic notes first. Validation rejects unsupported detail kinds and values absent from the supplied text/details. Model extraction can still need manual correction.
+
+The original capture and replies remain saved if AI fails or is unavailable. A 60-second processing lease allows retry after an interrupted request. Optimistic versions prevent stale AI output overwriting a newer edit. With AI disabled, add/edit fields manually; automatic extraction and follow-up generation are unavailable.
+
+## Voice privacy and limits
+
+Tap Record, read the disclosure, then start recording. Browser speech recognition produces editable text; saving is separate. The browser's speech service may process audio. This app stores only submitted text and does not upload or retain raw audio. Recognition stops after 60 seconds; unsupported browsers and permission/network failures retain typed text and offer retry. Actual microphone/vendor compatibility remains unverified. Text capture works independently.
+
+## Validation
 
 ```sh
 npm test
-npm run typecheck
 npm run build
+npm run check:edge
+# Requires the local stack and .env.local; creates synthetic local accounts only:
+FITNESS_LOCAL_INTEGRATION=1 npm run test:integration
+# Transactional database checks (rollback their fixtures):
+docker exec -i supabase_db_fitness-capture-assessment psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/backend/database.sql
+docker exec -i supabase_db_fitness-capture-assessment psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/backend/database-logging.sql
+docker exec -i supabase_db_fitness-capture-assessment psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/backend/database-recovery.sql
 ```
 
-Tests use only synthetic notes and users, and execute the production SQL against real SQLite. See [validation](docs/VALIDATION.md) for exact coverage and browser limits.
+The ordinary suite skips the actual local HTTP account test unless explicitly enabled. See [validation evidence and limits](docs/VALIDATION.md). Browser walkthrough remains unfinished after browser automation connection failures; repeated browser permission attempts were stopped at the user's request.
 
-## Assessment walkthrough / code ownership
+## Walkthrough and code ownership
 
-Product logic is concentrated in a few files:
+- `src/App.tsx` and `src/features/`: login, mobile notebook, capture, review, copy/log distinction and voice lifecycle.
+- `src/lib/use-fitness.ts`: account lifecycle, draft-safe mutations, retry IDs and asynchronous selection guards.
+- `src/lib/repository.ts`: typed caller-scoped database adapter.
+- `supabase/migrations/`: ownership policies, immutable originals, transactional captures/chats, idempotency, versions and recoverable analysis claims.
+- `supabase/functions/_shared/domain/`: shared Zod contracts and plain-text formatting.
+- `supabase/functions/_shared/server/`: verified authentication, bounded agent and analysis orchestration.
+- `tests/`: synthetic domain/UI/server cases, real local Auth/PostgREST account isolation, and transactional PostgreSQL fixtures.
 
-| File | Responsibility |
-| --- | --- |
-| `lib/entries.ts` | Entry types, conservative extraction, clarification validation, text formatting |
-| `lib/store.ts` | Parameterized owner-scoped SQLite statements and optimistic updates |
-| `lib/api.ts` | Auth-required request handling, validation, same-origin mutations, capture idempotency |
-| `app/api/entries/` | Thin server adapter from verified platform identity and D1 to the API logic |
-| `app/capture-app.tsx` | Capture, inbox, API errors, clipboard, explicit logged transitions |
-| `app/entry-review.tsx` | Optional detail editing, note editing, original capture, export preview |
-| `lib/voice.ts`, `app/use-voice.ts` | Testable speech lifecycle and React integration |
-| `db/schema.ts`, `drizzle/` | Schema and migration history |
-| `tests/` | Domain, real-SQLite API, and speech failure/retry tests |
+Data flow: sign in → save note and initial message atomically → optional authenticated analysis → save a reply to the same entry → review/edit → copy saved text → explicitly mark logged. A reload restores entries and messages from the account. Sign-out clears private UI state.
 
-The React interface, domain model/parser, SQL persistence, API logic and tests were created for this task with AI assistance and should be reviewed/explained by the candidate. The platform starter supplies Vinext (Next-compatible React on Cloudflare), ChatGPT auth helpers, Worker entrypoint, and the build/preview/hosting scripts. Its generic dependencies are retained in the lockfile; unused starter UI examples and components were removed. The starter scripts are infrastructure, not business logic.
+AI assisted implementation and review. The candidate should inspect and understand this code before presenting it. The earlier Sites/Vinext preview remains in Git history; its runtime was removed from this assessment worktree.
 
-Data flow: browser submits a UUID and note → server obtains verified user ID → validates origin/input → saves note plus explicitly extracted details → returns entry → optional edits update that owner/ID/version → clipboard formatting is local and never writes logged state. The original capture is immutable. Editing the saved note re-extracts and replaces its details; the UI warns before that action.
+## Delivery status
 
-## Extraction limits and voice privacy
-
-Extraction uses transparent rules, **not an LLM**. Prefer one food/exercise per comma, semicolon, or new line. Supported examples:
-
-```text
-2 eggs, 1/2 cup rice; chicken
-Squat 3x5 at 60 kg; Run 20 min 3 km
-Bench press 3 sets of 8 reps
-```
-
-Unknown amounts remain empty; no foods/servings are inferred from a nutrition database. Compound text such as `mac and cheese` stays intact. Arbitrary conversational sentences, unusual units, speech punctuation, and complex workout notation may need manual editing. The full original note remains available even when structured extraction is imperfect. This is a deliberate tradeoff to keep the assessment small, explainable, and free of paid API setup; there is no hidden AI-provider integration.
-
-Voice requires a browser that implements the SpeechRecognition/Web Speech interface, typically a secure origin/localhost and microphone permission. Support and accuracy vary; text remains available. The browser may transmit audio to its speech provider. This is disclosed before recording. This app does not upload, store, or retain raw audio. Recording is bounded to 60 seconds. Test with synthetic speech first; no personal audio was used during development.
-
-## Deployment / access
-
-This project has its own `.openai/hosting.json` identity and separate D1 database. The Sites source workflow builds, commits, pushes, packages, and deploys that exact source. The initial site stays **owner-private**; evaluator access has not been broadened. The app also enforces per-user entry ownership independently of the hosting audience. Sharing with an evaluator is a separate access decision.
-
-No GitHub mirror was created: the local GitHub CLI's saved credentials are invalid. Sites provides its own project-scoped source repository; source URL: `https://git.chatgpt-team.site/2a43a499-76b2-4f43-84f8-c0127fd2c055/appgprj_6ada8965f0208191ab7c3d596cd580f9.git`. The deployed app is [Fitness Capture Companion](https://fitness-capture-companion.flowy-gem-9293.chatgpt.site). No Travel credentials, providers, database, repository, or deployment were copied.
-
-## Incomplete / intentionally bounded
-
-- Browser/vendor speech recognition is a compatibility dependency; no paid transcription fallback or realtime voice conversation.
-- No general-purpose AI understanding: explicit rule-based extraction with manual correction.
-- No password management or custom auth stack; hosted auth depends on Sites.
-- Cross-account hosted identity and actual microphone hardware need explicit hands-on verification beyond synthetic integration tests.
-- Owner-private hosting must be shared before an evaluator can access it. No assessment was submitted and no external people were messaged.
+This matching-stack version runs locally and has not been deployed. A separate fitness GitHub repository, Vercel project, hosted Supabase project, provider authorization and live evaluator-account verification remain outstanding. The historical owner-private Sites preview is a different revision and is not evidence that this assessment version is deployed. No assessment was submitted and no external people were messaged.

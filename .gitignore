@@ -43,3 +43,10 @@ yarn-error.log*
 
 # OS metadata
 .DS_Store
+
+/test-results/
+/playwright-report/
+/supabase/.temp/
+/supabase/.branches/
+
+!.env.example
