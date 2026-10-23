@@ -3,8 +3,9 @@ import type { Entry } from '@domain/contracts';
 import { useFitness } from './lib/use-fitness';
 import { Capture } from './features/capture/Capture';
 import { EntryReview } from './features/review/EntryReview';
-import { CircleAlert, CircleCheck, Inbox, PencilLine, RefreshCw } from 'lucide-react';
+import { CircleAlert, Inbox, PencilLine, RefreshCw } from 'lucide-react';
 import { KindIcon, Spinner, StatusIcon } from './components/Feedback';
+import { ConfirmationToast } from './components/ConfirmationToast';
 
 function AuthForm({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
   const [email, setEmail] = useState('');
@@ -84,7 +85,8 @@ function Notebook({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
   return <div className="notebook" data-mobile-view={mobileView}>
     <header className="app-header"><div className="brand"><span className="brand-mark" aria-hidden="true">f<span>.</span></span><h1>Fitness notebook</h1></div><div className="account"><span className="small muted">{fitness.user?.email}</span><button type="button" className="text-button" disabled={navigationBlocked} onClick={() => void fitness.signOut()}>Sign out</button></div></header>
     <nav className="mobile-navigation" aria-label="Notebook"><button type="button" aria-pressed={mobileView === 'capture'} disabled={navigationBlocked} onClick={() => navigate('capture')}><PencilLine className="ui-icon" aria-hidden="true" size={16} />Capture</button><button type="button" aria-pressed={mobileView !== 'capture'} disabled={navigationBlocked} onClick={() => navigate('inbox')}><Inbox className="ui-icon" aria-hidden="true" size={16} />Inbox <span>{toLogCount}</span></button></nav>
-    {(fitness.error || fitness.notice) && <div className={`app-message ${fitness.error ? 'error' : ''}`} role={fitness.error ? 'alert' : 'status'}>{fitness.error ? <CircleAlert className="ui-icon" aria-hidden="true" size={18} /> : <CircleCheck className="ui-icon" aria-hidden="true" size={18} />}{fitness.error || fitness.notice}</div>}
+    {fitness.error && <div className="app-message error" role="alert"><CircleAlert className="ui-icon" aria-hidden="true" size={18} />{fitness.error}</div>}
+    {fitness.notice && !fitness.error && <ConfirmationToast key={fitness.notice} message={fitness.notice} />}
     {reviewDirty && <p className="navigation-cue" role="status">Save or discard your review changes before navigating. Your draft is still here.</p>}
     {captureRecording && <p className="navigation-cue" role="status">Stop recording before navigating. Your capture stays here.</p>}
     <main className="notebook-grid"><div className="main-column">

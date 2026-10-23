@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { useState } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import App from '../../src/App';
 import type { Entry } from '@domain/contracts';
@@ -8,7 +8,7 @@ import type { useFitness } from '../../src/lib/use-fitness';
 
 const hook = vi.hoisted(() => ({ current: null as unknown as ReturnType<typeof useFitness> }));
 vi.mock('../../src/lib/use-fitness', () => ({ useFitness: () => hook.current }));
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); voice.status = 'idle'; voice.instances = 0; });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); voice.status = 'idle'; voice.instances = 0; });
 const voice = vi.hoisted(() => ({ instances: 0, status: 'idle', supported: true, error: '', record: vi.fn(), stop: vi.fn() }));
 vi.mock('../../src/features/capture/use-voice', () => ({ useVoice: () => { const [instance] = useState(() => voice.instances++); return { ...voice, status: instance === 0 ? voice.status : 'idle' }; } }));
 function ready() {
@@ -176,4 +176,27 @@ test('capture recording blocks review editing and reply recording while Stop sta
   expect((screen.getByRole('textbox', { name: 'Your reply' }) as HTMLTextAreaElement).disabled).toBe(true);
   expect((screen.getByRole('button', { name: 'Stop recording' }) as HTMLButtonElement).disabled).toBe(false);
   expect((screen.getByRole('button', { name: 'Record' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+test('confirmations toast without moving content, pause for focus, and dismiss while errors persist', () => {
+  vi.useFakeTimers(); ready();
+  hook.current.notice = 'Reply saved.';
+  const view = render(<App />);
+  expect(view.container.querySelector('.app-message')).toBeNull();
+  expect(view.container.querySelector('.confirmation-toast [role="status"]')?.textContent).toBe('Reply saved.');
+  const dismiss = screen.getByRole('button', { name: 'Dismiss confirmation' });
+  fireEvent.focus(dismiss);
+  act(() => vi.advanceTimersByTime(8000));
+  expect(screen.getByText('Reply saved.')).toBeTruthy();
+  fireEvent.blur(dismiss);
+  act(() => vi.advanceTimersByTime(5000));
+  expect(screen.queryByText('Reply saved.')).toBeNull();
+  hook.current = { ...hook.current, notice: 'Details saved.' };
+  view.rerender(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss confirmation' }));
+  expect(screen.queryByText('Details saved.')).toBeNull();
+  hook.current = { ...hook.current, error: 'Could not save. Try again.' };
+  view.rerender(<App />);
+  act(() => vi.advanceTimersByTime(6000));
+  expect(screen.getByRole('alert').textContent).toBe('Could not save. Try again.');
 });

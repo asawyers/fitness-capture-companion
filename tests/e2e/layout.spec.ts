@@ -23,10 +23,11 @@ test.beforeEach(async ({ page }) => {
         const [selected, setSelected] = useState(null);
         const [loading, setLoading] = useState(false);
         const [analyzingEntries, setAnalyzingEntries] = useState([]);
+        const [notice, setNotice] = useState('');
         return {configured:true,authReady:true,user:{id:'synthetic',email:'demo@example.test'},
-          entries,selected,loading,analyzingEntries,busy:false,error:'',notice:'',
+          entries,selected,loading,analyzingEntries,busy:false,error:'',notice,
           select:async id=>{setLoading(true);await new Promise(r=>setTimeout(r,30));setSelected({entry:entries.find(e=>e.id===id),messages:[{id:'message',role:'user',content:'Two eggs and rice'}]});setLoading(false)},
-          capture:async()=>{setSelected({entry:entries[0],messages:[]});return true},
+          capture:async()=>{setSelected({entry:entries[0],messages:[]});setNotice('Note saved.');return true},
           refresh:async()=>{},signOut:async()=>{},reply:async()=>{await new Promise(r=>setTimeout(r,350));setAnalyzingEntries([selected.entry.id]);setTimeout(()=>setAnalyzingEntries([]),1200);return true},saveDetails:async()=>true,
           editNote:async()=>true,setLogged:async()=>true,skipQuestion:async()=>true,analyze:async()=>{}
         };
@@ -168,4 +169,22 @@ test('all optional questions appear together with a single reply box', async ({ 
   await page.getByRole('textbox', { name: 'Your reply' }).press('Enter');
   await expect(page.getByRole('button', { name: 'Saving reply…', exact: true })).toBeDisabled();
   await expect(page.getByText('Preparing details… Your saved note and replies are safe.', { exact: true })).toBeVisible();
+});
+
+test('success appears as a dismissible fixed toast without shifting the notebook', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+  const before = await page.locator('.capture-panel').boundingBox();
+  const beforeScroll = await page.evaluate(() => scrollY);
+  await page.getByRole('textbox', { name: 'Your note', exact: true }).fill('Synthetic lunch');
+  await page.getByRole('button', { name: 'Save note', exact: true }).click();
+  const toast = page.locator('.confirmation-toast');
+  await expect(toast.getByRole('status')).toHaveText('Note saved.');
+  expect(await toast.evaluate(element => getComputedStyle(element).position)).toBe('fixed');
+  const after = await page.locator('.capture-panel').boundingBox();
+  expect(after!.y + await page.evaluate(() => scrollY)).toBe(before!.y + beforeScroll);
+  await page.screenshot({ path: '/tmp/fitness-confirmation-toast.png', fullPage: true });
+  await expect(page.locator('.app-message')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Dismiss confirmation' }).click();
+  await expect(toast).toHaveCount(0);
 });

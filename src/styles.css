@@ -317,6 +317,12 @@ summary { touch-action: manipulation; }
 .empty-inbox > p:first-of-type { font-family: Georgia, serif; font-size: 22px; margin-bottom: 5px; }
 .copy-feedback { margin-top: 12px; }
 .copy-feedback.success { color: #245e47; animation: feedback-appear 180ms ease-out; }
+.confirmation-toast { position: fixed; z-index: 50; right: max(20px, env(safe-area-inset-right)); bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: flex-start; gap: 8px; width: min(390px, calc(100% - 32px)); padding: 8px 8px 8px 16px; border: 1px solid #bad6c7; border-left: 4px solid #2b6652; border-radius: 10px; background: #fff; color: #245e47; box-shadow: 0 8px 28px #173e7224; animation: feedback-appear 180ms ease-out; }
+.toast-message { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; flex: 1; min-width: 0; font-size: 14px; }
+.toast-message .ui-icon { margin-top: 2px; }
+.toast-message p { overflow-wrap: anywhere; }
+.toast-dismiss { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: 6px; background: transparent; color: #506780; }
+.toast-dismiss:hover { background: #edf5f0; }
 .reply-progress { padding: 10px 12px; margin: 0 0 14px; border-left: 3px solid #245bb6; background: #e8f0fc; color: #173e72; font-size: 14px; }
 .clarification-list { list-style: decimal; margin: 0 0 12px; padding-left: 22px; font-size: 14px; line-height: 1.6; }
 .clarification-list li + li { margin-top: 6px; }
