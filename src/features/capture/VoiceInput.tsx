@@ -31,7 +31,7 @@ export function VoiceInput({ value, onChange, label, placeholder, disabled = fal
         }} rows={rows ?? (compact ? 2 : 3)} />
     </label>
     <div className="voice-toolbar">
-      {voice.supported ? <span className="browser-recording"><span className="muted small">Browser recording</span> <button type="button" className={recording ? 'button recording' : 'button subtle'} disabled={disabled || voice.status === 'stopping'}
+      {voice.supported ? <span className="browser-recording"><button type="button" className={recording ? 'button recording' : 'button subtle'} disabled={disabled || voice.status === 'stopping'}
         onClick={() => { if (recording) voice.stop(); else setDisclose(true); }}>
         <span aria-hidden="true">{recording ? '■' : '●'}</span> {voice.status === 'stopping' ? 'Finishing…' : recording ? 'Stop recording' : 'Record'}
       </button></span> : <span className="muted small">Browser recording isn’t available here.</span>}
