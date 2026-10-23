@@ -55,6 +55,8 @@ Meal/workout icons and labeled status colors help scan the inbox. Loading spinne
 
 Optional replies submit with Save reply or Enter (Shift+Enter inserts a new line). The question panel immediately shows Saving reply, then Preparing details while background analysis runs. Repeat submissions are blocked; failed saves retain the answer for retry.
 
+All missing quantities appear together, grouped by food or exercise. Answer any or all in the single reply box, naming each item and field, then save once. Skip all dismisses the group. Explicit answers update the same entry and conversation; unanswered fields stay unknown. The existing saved question remains a compatibility anchor for a short, unlabeled answer, so no database migration is required.
+
 ## Validation
 
 ```sh

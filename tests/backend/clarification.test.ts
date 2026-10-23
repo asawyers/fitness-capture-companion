@@ -43,3 +43,15 @@ describe('deterministic clarification fallback',()=>{
     expect(invalid.response.status).toBe(502); expect(invalid.apply).not.toHaveBeenCalled();
   });
 });
+
+it('accepts several explicit answers together and asks only about unanswered items',async()=>{
+  const {response,apply}=await analyze('meal','yogurt, sausage and cookie. yogurt: one cup; sausage: two links',[
+    {type:'food',name:'yogurt',amount:'one cup'},
+    {type:'food',name:'sausage',amount:'two links'},
+    {type:'food',name:'cookie',amount:''},
+  ]);
+  expect(response.status).toBe(200);
+  expect(apply).toHaveBeenCalledOnce();
+  expect(apply.mock.calls[0][1].details.map(detail=>detail.type==='food'?detail.amount:'')).toEqual(['one cup','two links','']);
+  expect(apply.mock.calls[0][1].question).toMatchObject({itemIndex:2,field:'amount'});
+});

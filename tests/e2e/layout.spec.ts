@@ -14,9 +14,9 @@ test.beforeEach(async ({ page }) => {
       import React from ${JSON.stringify(react)};
       const { useState } = React;
       const entries = Array.from({length: 12}, (_, i) => ({
-        id: 'synthetic-' + i, kind: 'meal', originalNote: 'Two eggs and rice', note: 'Two eggs and rice ' + i,
-        details: [{type:'food',name:'Eggs',amount:'2'},{type:'food',name:'Rice',amount:''}],
-        pendingQuestion: {text:'How much rice?',missingFields:['amount']}, analysisStatus:i === 1 ? 'processing' : i === 2 ? 'failed' : 'ready',
+        id: 'synthetic-' + i, kind: 'meal', originalNote: 'Two eggs and rice', note: i === 3 ? 'Yogurt, sausage and cookie' : 'Two eggs and rice ' + i,
+        details: i === 3 ? ['yogurt','sausage','cookie'].map(name=>({type:'food',name,amount:''})) : [{type:'food',name:'Eggs',amount:'2'},{type:'food',name:'Rice',amount:''}],
+        pendingQuestion: i === 3 ? {itemIndex:0,field:'amount',text:'How much yogurt?'} : {itemIndex:1,field:'amount',text:'How much rice?'}, analysisStatus:i === 1 ? 'processing' : i === 2 ? 'failed' : 'ready',
         logged:false, version:1, createdAt:'2026-10-23T10:00:00Z',updatedAt:'2026-10-23T10:00:00Z'
       }));
       export function useFitness() {
@@ -97,7 +97,7 @@ test('status cues retain labels and loading respects reduced motion', async ({ p
   await expect(processing).toHaveText('Preparing details');
   expect(await processing.locator('.loading-spinner').evaluate(element => getComputedStyle(element).animationName)).toBe('none');
   await expect(page.locator('.entry-status.status-retry')).toHaveText('Retry details');
-  await expect(page.locator('.entry-status.status-question').first()).toHaveText('Optional detail');
+  await expect(page.locator('.entry-status.status-question').first()).toHaveText('Optional details');
   expect(await processing.locator('svg').getAttribute('aria-hidden')).toBe('true');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   expect(await processing.locator('.loading-spinner').evaluate(element => getComputedStyle(element).animationName)).toBe('loading-turn');
@@ -149,4 +149,19 @@ test('resizing keeps simulated recording and reply drafts reachable', async ({ p
   await expect(reply).toBeVisible();
   await expect(reply).toHaveValue('One cup');
   await expect(page.getByRole('button', { name: 'Discard reply' })).toBeVisible();
+});
+
+test('all optional questions appear together with a single reply box', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('navigation', { name: 'Notebook' }).getByRole('button', { name: /Inbox/ }).click();
+  await page.getByRole('button', { name: /Yogurt, sausage and cookie/ }).click();
+  for (const name of ['yogurt', 'sausage', 'cookie']) await expect(page.getByText(`What amount did you record for ${name}?`, { exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Your reply' })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Skip all', exact: true })).toBeEnabled();
+  await page.screenshot({ path: '/tmp/fitness-batch-questions.png', fullPage: true });
+  await page.getByRole('textbox', { name: 'Your reply' }).fill('yogurt: one cup; sausage: two links; cookie: one');
+  await page.getByRole('textbox', { name: 'Your reply' }).press('Enter');
+  await expect(page.getByRole('button', { name: 'Saving reply…', exact: true })).toBeDisabled();
+  await expect(page.getByText('Preparing details… Your saved note and replies are safe.', { exact: true })).toBeVisible();
 });

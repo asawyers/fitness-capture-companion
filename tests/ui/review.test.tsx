@@ -175,3 +175,38 @@ test('background analysis stays visible beside the question after the reply is s
   expect(question.textContent).toContain('Your saved note and replies are safe.');
   expect(question.querySelector('.loading-spinner')).toBeTruthy();
 });
+
+test('all missing quantities share one optional answer and one save operation', async () => {
+  const reply = vi.fn().mockResolvedValue(true);
+  const props = { messages: [], busy: false, saveDetails: vi.fn(), editNote: vi.fn(), setLogged: vi.fn(), reply, skipQuestion: vi.fn(), analyze: vi.fn(), onDirty: vi.fn() };
+  const pending = { ...entry, details: [
+    { type: 'food' as const, name: 'yogurt', amount: '' },
+    { type: 'food' as const, name: 'sausage', amount: '' },
+    { type: 'food' as const, name: 'cookie', amount: '' },
+  ], pendingQuestion: { itemIndex: 0, field: 'amount', text: 'How much yogurt?' } };
+  const view = render(<EntryReview {...props} entry={pending} />);
+  for (const name of ['yogurt', 'sausage', 'cookie']) expect(screen.getByText(`What amount did you record for ${name}?`)).toBeTruthy();
+  expect(screen.getAllByRole('textbox', { name: 'Your reply' })).toHaveLength(1);
+  const answer = 'yogurt: one cup; sausage: two links; cookie: one';
+  fireEvent.change(screen.getByRole('textbox', { name: 'Your reply' }), { target: { value: answer } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save reply' }));
+  await waitFor(() => expect(reply).toHaveBeenCalledExactlyOnceWith(answer));
+  view.rerender(<EntryReview {...props} entry={{ ...pending, details: pending.details.map((detail, index) => ({ ...detail, amount: index === 0 ? 'one cup' : index === 1 ? 'two links' : '' })), version: 2, pendingQuestion: { itemIndex: 2, field: 'amount', text: 'How much cookie?' } }} />);
+  expect(screen.queryByText('What amount did you record for yogurt?')).toBeNull();
+  expect(screen.queryByText('What amount did you record for sausage?')).toBeNull();
+  expect(screen.getByRole('heading', { name: 'How much cookie?' })).toBeTruthy();
+});
+
+test('batch questions keep an unnamed active target visible before other quantity gaps', () => {
+  const props = { messages: [], busy: false, saveDetails: vi.fn(), editNote: vi.fn(), setLogged: vi.fn(), reply: vi.fn(), skipQuestion: vi.fn(), analyze: vi.fn(), onDirty: vi.fn() };
+  const view = render(<EntryReview {...props} entry={{ ...entry, details: [
+    { type: 'food', name: '', amount: 'one cup' },
+    { type: 'food', name: 'yogurt', amount: '' },
+    { type: 'food', name: 'sausage', amount: '' },
+  ], pendingQuestion: { itemIndex: 0, field: 'name', text: 'Which food was one cup?' } }} />);
+  const questions = view.container.querySelectorAll('.clarification-list li');
+  expect(questions).toHaveLength(3);
+  expect(questions[0].textContent).toBe('Which food was one cup?');
+  fireEvent.click(screen.getByRole('button', { name: 'Skip all' }));
+  expect(props.skipQuestion).toHaveBeenCalledOnce();
+});

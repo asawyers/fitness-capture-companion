@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Detail, Entry, Message } from '@domain/contracts';
-import { detailFields, detailLabel, formatEntry } from '@domain/entries';
+import { clarificationGroups, detailFields, detailLabel, formatEntry } from '@domain/entries';
 import { VoiceInput } from '../capture/VoiceInput';
 import { CircleCheck, Copy, Undo2 } from 'lucide-react';
 import { KindIcon, Spinner, StatusIcon } from '../../components/Feedback';
@@ -50,6 +50,15 @@ export function EntryReview({ entry, messages, busy: externalBusy, analyzing = f
     }
   }, [entry.analysisStatus, entry.updatedAt]);
   const savedText = formatEntry(entry);
+  const clarification = clarificationGroups(entry.details);
+  if (entry.pendingQuestion) {
+    const anchor = entry.pendingQuestion;
+    const index = clarification.findIndex(group => group.itemIndex === anchor.itemIndex && group.fields.includes(anchor.field));
+    // Keep the compatibility target first, including an unnamed item needing identification.
+    if (index < 0) clarification.unshift({ itemIndex: anchor.itemIndex, fields: [anchor.field], text: anchor.text });
+    else if (index > 0) clarification.unshift(...clarification.splice(index, 1));
+  }
+  const batchQuestions = clarification.length > 1 || clarification.some(group => group.fields.length > 1);
   const blocked = busy || dirty || recording;
   function edit(mode: 'details' | 'note') { if (mode === 'note') setNoteExpanded(true); setDetails(entry.details); setNote(entry.note); setEditing(mode); setCopyStatus(''); setShowCopy(false); }
   function changeField(index: number, field: string, value: string) {
@@ -101,12 +110,13 @@ export function EntryReview({ entry, messages, busy: externalBusy, analyzing = f
     {!analyzing && !replySubmitting && ((entry.analysisStatus === 'processing' && !processingExpired) || busy) && <p className="muted small loading-state" role="status"><Spinner />Saving or preparing details… Your original note is saved.</p>}
     {(entry.analysisStatus === 'idle' || entry.analysisStatus === 'failed' || (entry.analysisStatus === 'processing' && processingExpired)) && <div className="analysis-retry"><p className="small">{entry.analysisStatus === 'processing' ? 'Details may have been interrupted. Your note is saved. You can retry now.' : entry.analysisStatus === 'failed' ? 'Details couldn’t be prepared. Your note is saved.' : 'Your note is saved. Prepare details when you’re ready.'}</p><button type="button" className="button subtle" disabled={blocked || editing !== null || Boolean(answer.trim())} onClick={() => void analyze()}>{entry.analysisStatus === 'idle' ? 'Prepare details' : 'Retry details'}</button></div>}
 
-    {(entry.pendingQuestion || answer.trim() || recording || replySubmitting || analyzing) && <section className="question" aria-labelledby="question-heading"><p className="muted small">{entry.pendingQuestion ? 'One optional detail' : analyzing ? 'Working on your saved entry' : 'Reply draft'}</p><h3 id="question-heading">{entry.pendingQuestion?.text ?? (analyzing ? 'Preparing details' : 'Your unsaved reply')}</h3>
+    {(entry.pendingQuestion || answer.trim() || recording || replySubmitting || analyzing) && <section className="question" aria-labelledby="question-heading"><p className="muted small">{entry.pendingQuestion ? 'Optional details' : analyzing ? 'Working on your saved entry' : 'Reply draft'}</p><h3 id="question-heading">{entry.pendingQuestion ? batchQuestions ? 'Add any missing details' : entry.pendingQuestion.text : (analyzing ? 'Preparing details' : 'Your unsaved reply')}</h3>
+      {entry.pendingQuestion && batchQuestions && <><ol className="clarification-list">{clarification.map(group => <li key={`${group.itemIndex}:${group.fields.join(',')}`}>{group.text}</li>)}</ol><p className="small clarification-hint">Answer any or all in one reply. Include the food or exercise name and the fields you’re answering. Unknown details can stay blank.</p></>}
       {(replySubmitting || analyzing) && <p className="reply-progress loading-state" role="status"><Spinner />{replySubmitting ? 'Saving your reply…' : 'Preparing details… Your saved note and replies are safe.'}</p>}
       {!entry.pendingQuestion && !analyzing && !replySubmitting && <p className="small">This question is no longer open. Your draft is still here. Discard it when you’re ready to continue.</p>}
       {(entry.pendingQuestion || answer.trim() || recording) && <VoiceInput value={answer} onChange={setAnswer} label="Your reply" placeholder="Add what you remember…" compact disabled={busy || analyzing || editing !== null} onRecording={setRecording} onSubmit={() => void saveReply()} />}
       {answer.length > 4000 && <p className="inline-error" role="alert">Keep your reply within 4,000 characters. Your text is still here.</p>}
-      {entry.pendingQuestion && <div className="button-row"><button type="button" className="button primary" disabled={busy || analyzing || recording || !answer.trim() || answer.length > 4000 || editing !== null} onClick={() => void saveReply()}>{(replySubmitting || analyzing) && <Spinner />}{replySubmitting ? 'Saving reply…' : analyzing ? 'Preparing details…' : 'Save reply'}</button><button type="button" className="button subtle" disabled={busy || analyzing || recording || Boolean(answer.trim()) || editing !== null} onClick={() => void skipQuestion()}>Skip</button><span className="muted small">Enter to send · Shift+Enter for a new line.</span></div>}
+      {entry.pendingQuestion && <div className="button-row"><button type="button" className="button primary" disabled={busy || analyzing || recording || !answer.trim() || answer.length > 4000 || editing !== null} onClick={() => void saveReply()}>{(replySubmitting || analyzing) && <Spinner />}{replySubmitting ? 'Saving reply…' : analyzing ? 'Preparing details…' : 'Save reply'}</button><button type="button" className="button subtle" disabled={busy || analyzing || recording || Boolean(answer.trim()) || editing !== null} onClick={() => void skipQuestion()}>{batchQuestions ? 'Skip all' : 'Skip'}</button><span className="muted small">Enter to send · Shift+Enter for a new line.</span></div>}
       {replyError && <p className="inline-error" role="alert">{replyError}</p>}
       {answer.trim() && <button type="button" className="text-button discard-reply" disabled={busy || recording} onClick={() => setAnswer('')}>Discard reply</button>}
     </section>}

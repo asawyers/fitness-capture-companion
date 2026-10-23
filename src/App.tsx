@@ -28,7 +28,7 @@ function entryStatus(entry: Entry, preparing = false) {
   if (entry.logged) return 'Logged';
   if (preparing || entry.analysisStatus === 'processing') return 'Preparing details';
   if (entry.analysisStatus === 'failed' || entry.analysisStatus === 'idle') return 'Retry details';
-  if (entry.pendingQuestion) return 'Optional detail';
+  if (entry.pendingQuestion) return 'Optional details';
   return 'Ready to copy';
 }
 
