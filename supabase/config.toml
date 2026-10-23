@@ -415,4 +415,6 @@ enabled = true
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
 
 [functions.fitness]
-verify_jwt = true
+# New API-key compatibility: the handler verifies the caller with auth.getUser
+# before data/AI access and uses their session JWT for owner-scoped RLS.
+verify_jwt = false

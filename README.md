@@ -33,7 +33,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<local anon or publishable key>
 VITE_FITNESS_API_URL=http://127.0.0.1:55421/functions/v1/fitness
 ```
 
-Only browser-safe public Supabase keys belong here. Never use a service-role key or OpenAI key in a `VITE_` variable. The database and Edge Function verify the actual user; a public key does not grant access to private entries.
+Only browser-safe public Supabase keys belong here. Never use a service-role key or OpenAI key in a `VITE_` variable. The Edge Function verifies the bearer token with Supabase Auth (`getUser`); the gateway legacy-JWT check is disabled to support modern signing keys. The database and Edge Function verify the actual user; a public key does not grant access to private entries.
 
 ## Optional AI setup
 
@@ -81,4 +81,4 @@ AI assisted implementation and review. The candidate should inspect and understa
 
 ## Delivery status
 
-This matching-stack version runs locally and has not been deployed. A separate fitness GitHub repository, Vercel project, hosted Supabase project, provider authorization and live evaluator-account verification remain outstanding. The historical owner-private Sites preview is a different revision and is not evidence that this assessment version is deployed. No assessment was submitted and no external people were messaged.
+This matching-stack version runs locally and has not been deployed. Source is now in the separate private repository [asawyers/fitness-capture-companion](https://github.com/asawyers/fitness-capture-companion), default branch `main`. A separate Vercel project `rito-labs/fitness-capture-companion` is created and linked, but has no deployment yet. Hosted Supabase setup, provider authorization and live evaluator-account verification remain outstanding. Evaluator source access must be arranged before submission. The historical owner-private Sites preview is a different revision and is not evidence that this assessment version is deployed. No assessment was submitted and no external people were messaged.
