@@ -1,4 +1,5 @@
 import { AnalysisRequestSchema, AnalysisResultSchema, type AnalysisRequest, type AnalysisResult } from '../domain/contracts.ts';
+import { failureDiagnostic, type FailureDiagnostic, type FailurePhase } from './diagnostics.ts';
 
 export type StoredEntry = { id: string; kind: string; note: string; details: unknown[]; pending_question: unknown; version: number; [key: string]: unknown };
 export type StoredMessage = { role: 'user' | 'assistant'; content: string };
@@ -16,6 +17,7 @@ type Dependencies = {
   agent: FitnessAgent | null;
   allowedOrigins?: readonly string[];
   timeoutMs?: number;
+  reportFailure?: (diagnostic: FailureDiagnostic) => void;
 };
 export function createFitnessHandler(dependencies: Dependencies) {
   const allowedOrigins = new Set(dependencies.allowedOrigins ?? []);
@@ -39,21 +41,30 @@ export function createFitnessHandler(dependencies: Dependencies) {
     } catch { return respond(400, { error: 'invalid_request' }); }
     const repository = dependencies.repository(request);
     let claimed = false;
+    let phase: FailurePhase = 'claim';
     try {
       const claim = await repository.claim(body);
       if (!claim.claimed) return respond(200, { entry: claim.entry, duplicate: true });
       claimed = true;
+      phase = 'history';
       const messages = await repository.history(body.entryId);
       const signal = AbortSignal.timeout(dependencies.timeoutMs ?? 20000);
-      const timeout = new Promise<never>((_,reject) => signal.addEventListener('abort',() => reject(new Error('Analysis timed out')),{once:true}));
-      const result = AnalysisResultSchema.parse(await Promise.race([dependencies.agent({ entry: claim.entry, messages }, signal), timeout]));
+      const timeout = new Promise<never>((_,reject) => signal.addEventListener('abort',() => reject(new DOMException('Analysis timed out','TimeoutError')),{once:true}));
+      phase = 'agent';
+      const output = await Promise.race([dependencies.agent({ entry: claim.entry, messages }, signal), timeout]);
+      phase = 'schema';
+      const result = AnalysisResultSchema.parse(output);
+      phase = 'validation';
       validateResult(claim.entry, messages, result);
+      phase = 'apply';
       const entry = await repository.apply(body, result);
       return respond(200, { entry, duplicate: false });
     } catch (error) {
+      const diagnostic = failureDiagnostic(phase,error);
+      try { (dependencies.reportFailure ?? ((safe) => console.warn('fitness_analysis_failure',safe)))(diagnostic); } catch { /* Diagnostics must not change the failure response. */ }
       if (claimed) { try { await repository.fail(body); } catch { /* A stale result must never modify a newer version. */ } }
       const conflict = typeof error === 'object' && error !== null && 'code' in error && error.code === '40001';
-      return respond(conflict ? 409 : 502, { error: conflict ? 'conflict' : 'analysis_failed' });
+      return respond(conflict ? 409 : 502, { error: conflict ? 'conflict' : 'analysis_failed', diagnostic });
     }
   };
 }

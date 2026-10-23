@@ -31,3 +31,13 @@ Deployment preparation: official Supabase key migration guidance prompted suppor
 - Model/origin/enablement configuration is in code. Only OPENAI_API_KEY needs server secret storage. No paid provider call is claimed.
 
 Latest ordinary suite: **73 passed, 1 local-HTTP test skipped**. Production build and Deno Edge typecheck pass. The earlier explicit local-HTTP run passed separately.
+
+## Latest hosted AI check
+
+The user confirmed the API key and had already approved the $5 synthetic-testing budget. Two temporary synthetic accounts successfully signed in through hosted Supabase Auth. Immediate original-note saving and capture deduplication passed. A cross-owner HTTP check timed out and was stopped without repetition. The saved synthetic note was reused for the independent analysis check.
+
+The first analysis response was generic HTTP502. Tested safe diagnostics were deployed once; one instrumented request identified phase `agent`, category `provider`, upstream HTTP429. The provider's response did not distinguish rate limiting from quota exhaustion. No more provider calls are being attempted. No successful extraction/clarification/workout AI result is claimed.
+
+Diagnostics disclose only phase/category/whitelisted code/status; they exclude notes, credentials and raw errors. Backend46/46 tests, TypeScript and Deno checks passed. A nearby capture notice now explains OpenAI processes saved notes and replies.
+
+The cleanup request targets only the two temporary QA users and their cascading synthetic entries. Its response was interrupted by new user input; cleanup completion is unconfirmed and has not been retried. No real user data was involved. Browser automation remains paused.

@@ -37,6 +37,7 @@ export function Capture({ busy, blocked, onSave }: CaptureProps) {
       {overLimit && <p className="inline-error" role="alert">Keep your note within 4,000 characters. Your text is still here.</p>}
       {saveError && <p className="inline-error" role="alert">{saveError}</p>}
       <div className="capture-footer"><p className="muted small">Your original words are saved first.<br />Details can wait.</p><button type="submit" className="button primary" disabled={busy || submitting || blocked || recording || !note.trim() || overLimit}>{busy || submitting ? 'Saving…' : 'Save note'}</button></div>
+      <p className="muted small">OpenAI processes saved note text and replies to prepare details.</p>
       {blocked && <p className="small">Save or discard your review changes before saving another note.</p>}
     </form>
   </section>;
