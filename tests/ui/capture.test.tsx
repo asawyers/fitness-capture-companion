@@ -8,7 +8,7 @@ test('device dictation guidance focuses the compact note and preserves its draft
   render(<Capture busy={false} blocked={false} onSave={vi.fn()} />);
   expect(screen.getByRole('heading', { name: 'New note' })).toBeTruthy();
   const note = screen.getByRole('textbox', { name: 'Your note' }) as HTMLTextAreaElement;
-  expect(note.rows).toBe(3);
+  expect(note.rows).toBe(2);
   fireEvent.change(note, { target: { value: 'Lunch draft' } });
   fireEvent.click(screen.getByRole('button', { name: 'Use device dictation' }));
   expect(document.activeElement).toBe(note);

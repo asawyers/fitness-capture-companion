@@ -324,4 +324,25 @@ summary { touch-action: manipulation; }
 .button:active:not(:disabled) { transform: translateY(1px); }
 @keyframes loading-turn { to { transform: rotate(360deg); } }
 @keyframes feedback-appear { from { opacity: .4; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+/* Keep the quick-capture composer small; longer drafts still grow naturally. */
+.capture-sheet { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 14px 18px; }
+.capture-sheet .section-heading { margin: 0; }
+.capture-sheet h2 { font-size: 23px; }
+.capture-sheet .kind-switch { margin: 0; min-width: 0; }
+.capture-sheet .kind-switch button { flex: 0 0 auto; padding: 7px 10px; }
+.capture-sheet form { grid-column: 1 / -1; margin-top: 8px; }
+.capture-sheet .field-label { gap: 0; }
+.capture-sheet .voice-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.capture-sheet textarea { min-height: 64px; line-height: 1.5; padding: 8px 11px; }
+.capture-sheet .voice-toolbar { margin-top: 6px; gap: 6px 10px; }
+.voice-actions { margin-left: auto; }
+.capture-sheet form > .capture-hint { margin-top: 6px; }
+@media (max-width: 700px) {
+  .capture-sheet { padding: 12px 14px; column-gap: 8px; }
+  .capture-sheet h2 { font-size: 21px; }
+  .capture-sheet .kind-switch button { padding: 7px 6px; gap: 5px; font-size: 12px; }
+  .capture-sheet .voice-actions { order: 2; }
+  .capture-sheet .browser-recording { order: 3; }
+  .capture-sheet .voice-toolbar > [role='status'] { order: 4; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } .button:active:not(:disabled) { transform: none; } }
