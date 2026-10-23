@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
       const entries = Array.from({length: 12}, (_, i) => ({
         id: 'synthetic-' + i, kind: 'meal', originalNote: 'Two eggs and rice', note: 'Two eggs and rice ' + i,
         details: [{type:'food',name:'Eggs',amount:'2'},{type:'food',name:'Rice',amount:''}],
-        pendingQuestion: {text:'How much rice?',missingFields:['amount']}, analysisStatus:'ready',
+        pendingQuestion: {text:'How much rice?',missingFields:['amount']}, analysisStatus:i === 1 ? 'processing' : i === 2 ? 'failed' : 'ready',
         logged:false, version:1, createdAt:'2026-10-23T10:00:00Z',updatedAt:'2026-10-23T10:00:00Z'
       }));
       export function useFitness() {
@@ -85,6 +85,21 @@ for (const width of [320, 768]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+test('status cues retain labels and loading respects reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Meal', exact: true })).toBeVisible();
+  const processing = page.locator('.entry-status.status-processing');
+  await expect(processing).toHaveText('Preparing details');
+  expect(await processing.locator('.loading-spinner').evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+  await expect(page.locator('.entry-status.status-retry')).toHaveText('Retry details');
+  await expect(page.locator('.entry-status.status-question').first()).toHaveText('Optional detail');
+  expect(await processing.locator('svg').getAttribute('aria-hidden')).toBe('true');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  expect(await processing.locator('.loading-spinner').evaluate(element => getComputedStyle(element).animationName)).toBe('loading-turn');
+});
 
 test('resizing keeps simulated recording and reply drafts reachable', async ({ page }) => {
   await page.addInitScript(() => {

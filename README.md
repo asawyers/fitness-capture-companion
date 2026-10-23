@@ -51,6 +51,8 @@ Choose **Use device dictation** to focus the input and see iPhone keyboard micro
 
 Desktop capture sits above an inbox list and selected-entry review. Mobile uses Capture/Inbox navigation and Back to inbox; drafts stay mounted while switching views. Review puts structured details and optional clarification before copy/log actions, with saved notes and conversation available in expandable sections.
 
+Meal/workout icons and labeled status colors help scan the inbox. Loading spinners and short save/copy feedback respect the device's reduced-motion preference. Icons are decorative; text labels remain available to assistive technology.
+
 ## Validation
 
 ```sh

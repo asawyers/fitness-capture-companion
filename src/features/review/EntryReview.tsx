@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Detail, Entry, Message } from '@domain/contracts';
 import { detailFields, detailLabel, formatEntry } from '@domain/entries';
 import { VoiceInput } from '../capture/VoiceInput';
+import { CircleCheck, Copy, Undo2 } from 'lucide-react';
+import { KindIcon, Spinner, StatusIcon } from '../../components/Feedback';
 
 export type EntryReviewProps = {
   entry: Entry; messages: Message[]; busy: boolean;
@@ -66,7 +68,7 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
   const editActions = <div className="edit-actions"><p className="small">{dirty ? 'Unsaved changes. Save or discard before copying or marking logged.' : 'Make your corrections, then save.'}</p><div className="button-row"><button type="button" className="button primary" disabled={busy || !dirty || (editing === 'note' && !note.trim())} onClick={() => void save()}>Save changes</button><button type="button" className="button subtle" disabled={busy} onClick={() => { setEditing(null); setDetails(entry.details); setNote(entry.note); }}>Discard changes</button></div></div>;
   return <section className="review-sheet" aria-labelledby="review-heading">
     <div className="section-heading"><div><p className="muted small">Saved <time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time></p>
-      <h2 id="review-heading">Review your {entry.kind === 'meal' ? 'meal' : 'workout'}</h2></div><span className={`status-tag ${entry.logged ? 'logged' : ''}`}>{entry.logged ? 'Logged' : 'To log'}</span></div>
+      <h2 id="review-heading"><KindIcon kind={entry.kind} />Review your {entry.kind === 'meal' ? 'meal' : 'workout'}</h2></div><span className={`status-tag ${entry.logged ? 'logged' : ''}`}><StatusIcon status={entry.logged ? 'logged' : 'ready'} />{entry.logged ? 'Logged' : 'To log'}</span></div>
     <section className="review-details" aria-labelledby="details-heading">
     <div className="section-heading detail-heading"><h3 id="details-heading">Details to log</h3>{editing !== 'details' && <button type="button" className="text-button" disabled={busy || editing !== null || recording} onClick={() => edit('details')}>Edit details</button>}</div>
     {editing === 'details' ? <div className="details-editor">
@@ -79,7 +81,7 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
     {editing === 'details' && editActions}
     </section>
 
-    {((entry.analysisStatus === 'processing' && !processingExpired) || busy) && <p className="muted small" role="status">Saving or preparing details… Your original note is saved.</p>}
+    {((entry.analysisStatus === 'processing' && !processingExpired) || busy) && <p className="muted small loading-state" role="status"><Spinner />Saving or preparing details… Your original note is saved.</p>}
     {(entry.analysisStatus === 'idle' || entry.analysisStatus === 'failed' || (entry.analysisStatus === 'processing' && processingExpired)) && <div className="analysis-retry"><p className="small">{entry.analysisStatus === 'processing' ? 'Details may have been interrupted. Your note is saved. You can retry now.' : entry.analysisStatus === 'failed' ? 'Details couldn’t be prepared. Your note is saved.' : 'Your note is saved. Prepare details when you’re ready.'}</p><button type="button" className="button subtle" disabled={blocked || editing !== null || Boolean(answer.trim())} onClick={() => void analyze()}>{entry.analysisStatus === 'idle' ? 'Prepare details' : 'Retry details'}</button></div>}
 
     {(entry.pendingQuestion || answer.trim() || recording) && <section className="question" aria-labelledby="question-heading"><p className="muted small">{entry.pendingQuestion ? 'One optional detail' : 'Reply draft'}</p><h3 id="question-heading">{entry.pendingQuestion?.text ?? 'Your unsaved reply'}</h3>
@@ -90,8 +92,8 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
       {answer.trim() && <button type="button" className="text-button discard-reply" disabled={busy || recording} onClick={() => setAnswer('')}>Discard reply</button>}
     </section>}
 
-    <div className="saved-actions"><div className="button-row"><button type="button" className="button primary" disabled={blocked || Boolean(answer.trim())} onClick={() => void copy()}>Copy saved text</button><button type="button" className="button outlined" disabled={blocked || Boolean(answer.trim())} onClick={() => void setLogged(!entry.logged)}>{entry.logged ? 'Undo logged' : 'Mark logged'}</button></div><p className="muted small">Copy into your usual tracker, then mark it logged.</p></div>
-    {copyStatus && <p className="small" role="status">{copyStatus}</p>}
+    <div className="saved-actions"><div className="button-row"><button type="button" className="button primary" disabled={blocked || Boolean(answer.trim())} onClick={() => void copy()}><Copy className="ui-icon" aria-hidden="true" size={16} />Copy saved text</button><button type="button" className="button outlined" disabled={blocked || Boolean(answer.trim())} onClick={() => void setLogged(!entry.logged)}>{entry.logged ? <Undo2 className="ui-icon" aria-hidden="true" size={16} /> : <CircleCheck className="ui-icon" aria-hidden="true" size={16} />}{entry.logged ? 'Undo logged' : 'Mark logged'}</button></div><p className="muted small">Copy into your usual tracker, then mark it logged.</p></div>
+    {copyStatus && <p className={`small copy-feedback ${copyStatus.startsWith('Copied.') ? 'success' : ''}`} role="status">{copyStatus.startsWith('Copied.') && <StatusIcon status="ready" />}{copyStatus}</p>}
     {showCopy && <label className="field-label">Saved text to copy<textarea ref={copyArea} aria-label="Saved text to copy" className="copy-fallback" readOnly rows={7} value={savedText} onFocus={() => copyArea.current?.select()} /></label>}
     <details className="working-note" open={editing === 'note' || noteExpanded} onToggle={event => { if (editing === 'note' && !event.currentTarget.open) event.currentTarget.open = true; else setNoteExpanded(event.currentTarget.open); }}>
       <summary>Working note</summary>
