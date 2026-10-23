@@ -23,18 +23,18 @@ function begin() {
   fireEvent.click(screen.getByRole('button', { name: 'Start recording' }));
 }
 
-test('device dictation focuses existing text without starting browser recording', () => {
+test('typing into the note does not start browser recording', () => {
   render(<Capture busy={false} blocked={false} onSave={vi.fn()} />);
   const note = screen.getByRole('textbox', { name: 'Your note' }) as HTMLTextAreaElement;
   fireEvent.change(note, { target: { value: 'Keep my draft' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Use device dictation' }));
+  note.focus();
   expect(document.activeElement).toBe(note);
   expect(note.value).toBe('Keep my draft');
   expect(sessions).toHaveLength(0);
   expect((screen.getByRole('button', { name: 'Save note' }) as HTMLButtonElement).disabled).toBe(false);
 });
 
-test('a blocked capture preserves its draft and disables editing, dictation, recording, and saving', () => {
+test('a blocked capture preserves its draft and disables editing, recording, and saving', () => {
   const onSave = vi.fn();
   const view = render(<Capture busy={false} blocked={false} onSave={onSave} />);
   const note = screen.getByRole('textbox', { name: 'Your note' }) as HTMLTextAreaElement;
@@ -42,7 +42,7 @@ test('a blocked capture preserves its draft and disables editing, dictation, rec
   view.rerender(<Capture busy={false} blocked={true} onSave={onSave} />);
   expect(note.disabled).toBe(true);
   expect(note.value).toBe('Keep my draft');
-  for (const name of ['Use device dictation', 'Record', 'Save note']) {
+  for (const name of ['Record', 'Save note']) {
     const button = screen.getByRole('button', { name }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     fireEvent.click(button);

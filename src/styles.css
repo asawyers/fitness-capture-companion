@@ -189,7 +189,6 @@ summary::marker { font-size: 10px; }
 .voice-toolbar .button { min-height: 44px; padding: 8px 10px; }
 .voice-toolbar .text-button { font-size: 12px; }
 .voice-toolbar .browser-recording { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
-.device-dictation-guidance { font-size: 12px; color: var(--muted); margin: 8px 0; }
 .capture-footer { margin-top: 16px; gap: 12px; flex-wrap: wrap; }
 .capture-footer > p { font-size: 12px; }
 .capture-footer > .button { margin-left: auto; }
@@ -342,8 +341,5 @@ summary { touch-action: manipulation; }
   .capture-sheet { padding: 12px 14px; column-gap: 8px; }
   .capture-sheet h2 { font-size: 21px; }
   .capture-sheet .kind-switch button { padding: 7px 6px; gap: 5px; font-size: 12px; }
-  .capture-sheet .voice-actions { order: 2; }
-  .capture-sheet .browser-recording { order: 3; }
-  .capture-sheet .voice-toolbar > [role='status'] { order: 4; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } .button:active:not(:disabled) { transform: none; } }

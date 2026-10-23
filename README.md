@@ -47,7 +47,7 @@ The original capture and replies remain saved if AI fails or is unavailable. A 6
 
 ## Voice privacy and limits
 
-Choose **Use device dictation** to focus the input and see iPhone keyboard microphone or Mac Dictation shortcut instructions. The website cannot launch system dictation itself. This app receives the resulting text without uploading or retaining raw audio. Browser recording remains a separate option: tap Record, read the disclosure, then start recording. The browser's speech service may process audio; recognition stops after 60 seconds. Some browsers, including Brave, expose the API without a working transcription service. Errors preserve drafts and point to device dictation or typing. Actual microphone/vendor compatibility remains unverified.
+System keyboard dictation can enter text directly into the note or reply field; there is no app-level device dictation button. Browser recording remains available: tap Record, read the disclosure, then start recording. The browser's speech service may process audio; recognition stops after 60 seconds. Some browsers, including Brave, expose the API without a working transcription service. Errors preserve drafts and point to device dictation or typing. Actual microphone/vendor compatibility remains unverified.
 
 Desktop capture sits above an inbox list and selected-entry review. Mobile uses Capture/Inbox navigation and Back to inbox; drafts stay mounted while switching views. Review puts structured details and optional clarification before copy/log actions, with saved notes and conversation available in expandable sections.
 

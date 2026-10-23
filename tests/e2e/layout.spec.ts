@@ -54,7 +54,8 @@ test('mobile preserves capture and protects unsaved review work', async ({ page 
   await page.goto('/');
   const note = page.getByRole('textbox', { name: 'Your note', exact: true });
   await note.fill('Keep this capture draft');
-  await page.getByRole('button', { name: 'Use device dictation' }).click();
+  await note.focus();
+  await expect(page.getByRole('button', { name: 'Use device dictation' })).toHaveCount(0);
   await expect(note).toBeFocused();
   await page.getByRole('navigation', { name: 'Notebook' }).getByRole('button', { name: /Inbox/ }).click();
   await expect(note).not.toBeVisible();
