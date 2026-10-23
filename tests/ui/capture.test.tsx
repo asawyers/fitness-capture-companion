@@ -4,6 +4,32 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { Capture } from '../../src/features/capture/Capture';
 afterEach(cleanup);
 
+test('device dictation guidance focuses the compact note and preserves its draft', () => {
+  render(<Capture busy={false} blocked={false} onSave={vi.fn()} />);
+  expect(screen.getByRole('heading', { name: 'New note' })).toBeTruthy();
+  const note = screen.getByRole('textbox', { name: 'Your note' }) as HTMLTextAreaElement;
+  expect(note.rows).toBe(3);
+  fireEvent.change(note, { target: { value: 'Lunch draft' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Use device dictation' }));
+  expect(document.activeElement).toBe(note);
+  expect(note.value).toBe('Lunch draft');
+  expect(screen.getByText(/On iPhone, tap the microphone on your keyboard/).textContent).toContain('configured Dictation shortcut');
+  expect(note.getAttribute('aria-describedby')).toBeTruthy();
+  fireEvent.change(note, { target: { value: 'Lunch draft and toast' } });
+  expect(document.activeElement).toBe(note);
+  expect(note.value).toBe('Lunch draft and toast');
+});
+
+test('the note grows with its content while keeping keyboard focus', () => {
+  render(<Capture busy={false} blocked={false} onSave={vi.fn()} />);
+  const note = screen.getByRole('textbox', { name: 'Your note' }) as HTMLTextAreaElement;
+  Object.defineProperty(note, 'scrollHeight', { configurable: true, value: 180 });
+  note.focus();
+  fireEvent.change(note, { target: { value: 'A longer note\nwith more lines\nand details' } });
+  expect(note.style.height).toBe('180px');
+  expect(document.activeElement).toBe(note);
+});
+
 test('a failed capture keeps the meal draft and successful retry clears it', async () => {
   const onSave = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
   render(<Capture busy={false} blocked={false} onSave={onSave} />);

@@ -47,7 +47,9 @@ The original capture and replies remain saved if AI fails or is unavailable. A 6
 
 ## Voice privacy and limits
 
-Tap Record, read the disclosure, then start recording. Browser speech recognition produces editable text; saving is separate. The browser's speech service may process audio. This app stores only submitted text and does not upload or retain raw audio. Recognition stops after 60 seconds; unsupported browsers and permission/network failures retain typed text and offer retry. Actual microphone/vendor compatibility remains unverified. Text capture works independently.
+Choose **Use device dictation** to focus the input and see iPhone keyboard microphone or Mac Dictation shortcut instructions. The website cannot launch system dictation itself. This app receives the resulting text without uploading or retaining raw audio. Browser recording remains a separate option: tap Record, read the disclosure, then start recording. The browser's speech service may process audio; recognition stops after 60 seconds. Some browsers, including Brave, expose the API without a working transcription service. Errors preserve drafts and point to device dictation or typing. Actual microphone/vendor compatibility remains unverified.
+
+Desktop capture sits above an inbox list and selected-entry review. Mobile uses Capture/Inbox navigation and Back to inbox; drafts stay mounted while switching views. Review puts structured details and optional clarification before copy/log actions, with saved notes and conversation available in expandable sections.
 
 ## Validation
 
@@ -55,6 +57,9 @@ Tap Record, read the disclosure, then start recording. Browser speech recognitio
 npm test
 npm run build
 npm run check:edge
+# Isolated responsive UI checks with synthetic fixtures; no real accounts/API calls.
+# Uses Brave headless by default; override with your installed Chromium executable:
+npm run test:e2e
 # Requires the local stack and .env.local; creates synthetic local accounts only:
 FITNESS_LOCAL_INTEGRATION=1 npm run test:integration
 # Transactional database checks (rollback their fixtures):
@@ -63,7 +68,7 @@ docker exec -i supabase_db_fitness-capture-assessment psql -U postgres -d postgr
 docker exec -i supabase_db_fitness-capture-assessment psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/backend/database-recovery.sql
 ```
 
-The ordinary suite skips the actual local HTTP account test unless explicitly enabled. See [validation evidence and limits](docs/VALIDATION.md). Browser walkthrough remains unfinished after browser automation connection failures; repeated browser permission attempts were stopped at the user's request.
+The ordinary suite skips the actual local HTTP account test unless explicitly enabled. See [validation evidence and limits](docs/VALIDATION.md). Synthetic headless responsive checks are separate from a real-device microphone walkthrough. Automation of the user's signed-in browser remains paused.
 
 ## Walkthrough and code ownership
 
@@ -85,6 +90,6 @@ The production URL target is [fitness-capture-companion.vercel.app](https://fitn
 
 A bounded hosted check confirmed frontend HTTP 200, production-origin CORS preflight HTTP 204, and anonymous backend denial HTTP 401. The latest backend configuration update is therefore serving. The database migrations were applied, and the security advisor returned no findings after restricting a preinstalled public event-trigger function.
 
-Verified through hosted APIs: synthetic sign-in, original capture, deduplication, AI extraction, same-entry clarification, persisted conversations, editing, logged/undo, restored sessions, and cross-account entry/chat denial. Deliberate version/ownership conflicts use HTTP409 to avoid transaction retries. Still incomplete: hosted email-confirmation/evaluator signup, browser/mobile/microphone verification, and evaluator access to private source. API checks are not substitutes for a completed browser walkthrough. The historical owner-private Sites preview and Travel remain unchanged. No assessment was submitted or external people messaged.
+Verified through hosted APIs: synthetic sign-in, original capture, deduplication, AI extraction, same-entry clarification, persisted conversations, editing, logged/undo, restored sessions, and cross-account entry/chat denial. Deliberate version/ownership conflicts use HTTP409 to avoid transaction retries. Synthetic responsive browser checks cover the refreshed layout independently of those hosted APIs. Still incomplete: hosted email-confirmation/evaluator signup, real-device microphone verification, and evaluator access to private source. The historical owner-private Sites preview and Travel remain unchanged. No assessment was submitted or external people messaged.
 
 Hosting account: `ajsawyers22`, Rito Labs (`rito-labs-2cc43421`). The earlier alternate-account Vercel project was deleted at the user’s request. The separate GitHub source and Personal Supabase backend remain in place.

@@ -28,6 +28,14 @@ test('speech results are complete snapshots so corrections replace earlier words
   h.voice.abort();
 });
 
+test('an empty speech snapshot removes withdrawn interim words', () => {
+  const h = setup();
+  h.session.onresult?.({ results: [[{ transcript: 'withdrawn words' }]] });
+  h.session.onresult?.({ results: [] });
+  assert.deepEqual(h.transcripts, ['withdrawn words', '']);
+  h.voice.abort();
+});
+
 test('stop waits for the final transcript and then ends the session', () => {
   const h = setup();
   h.voice.stop();
@@ -49,6 +57,16 @@ test('permission and network errors preserve delivered text and release the sess
     assert.equal(h.session.onresult, null);
     assert.equal(h.errors.length, 1);
     assert.deepEqual(h.transcripts, ['kept text']);
+  }
+});
+
+test('unavailable speech services suggest device dictation without a microphone permission loop', () => {
+  for (const code of ['network', 'service-not-allowed']) {
+    const h = setup();
+    h.session.onerror?.({ error: code });
+    assert.match(h.errors[0], /speech service/);
+    assert.match(h.errors[0], /device dictation/);
+    assert.doesNotMatch(h.errors[0], /allow access|try again/i);
   }
 });
 

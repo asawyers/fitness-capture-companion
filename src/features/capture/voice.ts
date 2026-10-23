@@ -15,9 +15,10 @@ type Clock = { schedule(callback: () => void, delay: number): () => void };
 const clock: Clock = { schedule(callback, delay) { const timer = setTimeout(callback, delay); return () => clearTimeout(timer); } };
 
 function errorMessage(code: string) {
-  if (code === 'not-allowed' || code === 'service-not-allowed') return 'Microphone access was denied. Allow access in your browser, then try again, or type your note.';
+  if (code === 'not-allowed') return 'Microphone access was denied. Allow access in your browser, then try again, or use device dictation or type your note.';
+  if (code === 'service-not-allowed') return 'Your browser’s speech service is unavailable or disabled. Your text is still here. Use device dictation or type your note.';
   if (code === 'no-speech') return 'No speech was detected. Try again or type your note.';
-  if (code === 'network') return 'Transcription lost its connection. Your text is still here. Try again or type.';
+  if (code === 'network') return 'Your browser could not reach its speech service. The service may be unavailable in this browser or offline. Your text is still here. Use device dictation or type your note.';
   if (code === 'audio-capture') return 'No microphone is available. Check your device, then try again or type.';
   return 'Recording could not start. Your text is still here. Try again or type.';
 }
@@ -54,7 +55,7 @@ export function startVoice(factory: () => SpeechSession, callbacks: Callbacks, t
     session.onresult = event => {
       if (ended) return;
       const text = Array.from(event.results).map(result => result[0]?.transcript ?? '').join(' ').trim();
-      if (text) callbacks.onTranscript(text);
+      callbacks.onTranscript(text);
     };
     cancelLimit = timer.schedule(stop, 60_000);
     session.start();

@@ -17,10 +17,10 @@ export function useVoice() {
     active.current?.abort(); setError('');
     const speech = window as SpeechWindow;
     const Recognition = speech.SpeechRecognition || speech.webkitSpeechRecognition;
-    if (!Recognition) { setError('Voice is unavailable in this browser. Type your note instead.'); return; }
+    if (!Recognition) { setError('Browser recording is unavailable here. Use device dictation or type your note.'); return; }
     active.current = startVoice(() => new Recognition(), {
       onStatus: setStatus, onError: setError,
-      onTranscript: text => onDraft([draft.trimEnd(), text].filter(Boolean).join('\n')),
+      onTranscript: text => onDraft(text ? [draft.trimEnd(), text].filter(Boolean).join('\n') : draft),
     });
   }
   return { supported, status, error, record, stop: () => active.current?.stop() };

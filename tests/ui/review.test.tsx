@@ -42,7 +42,10 @@ test('clipboard failure reveals selectable saved text without logging the entry'
 
 test('working-note edits keep the original capture visible and block saved actions', () => {
   setup();
+  fireEvent.click(screen.getByText('Working note', { selector: 'summary' }));
   fireEvent.click(screen.getByRole('button', { name: 'Edit note' }));
+  const workingNote = screen.getByRole('textbox', { name: 'Working note' }).closest('details')!;
+  expect(workingNote.open).toBe(true);
   fireEvent.change(screen.getByRole('textbox', { name: 'Working note' }), { target: { value: 'two eggs and toast' } });
   expect((screen.getByRole('button', { name: 'Mark logged' }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(screen.getByText('Original note'));
@@ -51,6 +54,7 @@ test('working-note edits keep the original capture visible and block saved actio
 
 test('working notes use the four-thousand-character contract limit', () => {
   setup();
+  fireEvent.click(screen.getByText('Working note', { selector: 'summary' }));
   fireEvent.click(screen.getByRole('button', { name: 'Edit note' }));
   expect((screen.getByRole('textbox', { name: 'Working note' }) as HTMLTextAreaElement).maxLength).toBe(4000);
 });
@@ -103,4 +107,41 @@ test('reopening a processing entry with an expired lease immediately allows retr
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-22T10:02:00Z'));
   render(<EntryReview entry={{ ...entry, analysisStatus: 'processing' }} messages={[]} busy={false} saveDetails={vi.fn()} editNote={vi.fn()} setLogged={vi.fn()} reply={vi.fn()} skipQuestion={vi.fn()} analyze={vi.fn()} onDirty={vi.fn()} />);
   expect((screen.getByRole('button', { name: 'Retry details' }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+
+test('review places structured details before actions and keeps saved notes collapsed below them', () => {
+  setup();
+  const details = screen.getByRole('region', { name: 'Details to log' });
+  const copy = screen.getByRole('button', { name: 'Copy saved text' });
+  const workingNote = screen.getByText('Working note', { selector: 'summary' }).closest('details')!;
+  const originalNote = screen.getByText('Original note').closest('details')!;
+  const conversation = screen.getByText(/Saved conversation/).closest('details')!;
+  expect(details.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(copy.compareDocumentPosition(workingNote) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(workingNote.open).toBe(false);
+  expect(originalNote.open).toBe(false);
+  expect(conversation.open).toBe(false);
+});
+
+test('workout review labels strength and cardio measurements', () => {
+  render(<EntryReview entry={{ ...entry, kind: 'workout', details: [
+    { type: 'strength', exercise: 'Squat', sets: '3', reps: '8', weight: '40 kg' },
+    { type: 'cardio', activity: 'Run', duration: '20 min', distance: '3 km' },
+  ] }} messages={[]} busy={false} saveDetails={vi.fn()} editNote={vi.fn()} setLogged={vi.fn()} reply={vi.fn()} skipQuestion={vi.fn()} analyze={vi.fn()} onDirty={vi.fn()} />);
+  for (const label of ['Sets', 'Reps', 'Weight', 'Duration', 'Distance']) expect(screen.getByText(label, { selector: 'dt' })).toBeTruthy();
+  expect(screen.getByText('40 kg')).toBeTruthy();
+  expect(screen.getByText('3 km')).toBeTruthy();
+});
+
+test('copying saved text leaves logging as a separate action', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  const props = setup();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy saved text' }));
+  await screen.findByText(/Copied. Mark logged/);
+  expect(writeText).toHaveBeenCalledOnce();
+  expect(props.setLogged).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Mark logged' }));
+  expect(props.setLogged).toHaveBeenCalledWith(true);
 });

@@ -12,6 +12,7 @@ export type EntryReviewProps = {
 const labels: Record<string, string> = { name: 'Food', amount: 'Amount', exercise: 'Exercise', sets: 'Sets', reps: 'Reps', weight: 'Weight', activity: 'Activity', duration: 'Duration', distance: 'Distance' };
 
 export function EntryReview({ entry, messages, busy, saveDetails, editNote, setLogged, reply, skipQuestion, analyze, onDirty }: EntryReviewProps) {
+  const [noteExpanded, setNoteExpanded] = useState(false);
   const [editing, setEditing] = useState<'details' | 'note' | null>(null);
   const [details, setDetails] = useState<Detail[]>(entry.details);
   const [note, setNote] = useState(entry.note);
@@ -44,7 +45,7 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
   }, [entry.analysisStatus, entry.updatedAt]);
   const savedText = formatEntry(entry);
   const blocked = busy || dirty || recording;
-  function edit(mode: 'details' | 'note') { setDetails(entry.details); setNote(entry.note); setEditing(mode); setCopyStatus(''); setShowCopy(false); }
+  function edit(mode: 'details' | 'note') { if (mode === 'note') setNoteExpanded(true); setDetails(entry.details); setNote(entry.note); setEditing(mode); setCopyStatus(''); setShowCopy(false); }
   function changeField(index: number, field: string, value: string) {
     setDetails(current => current.map((detail, position) => position === index ? { ...detail, [field]: value } as Detail : detail));
   }
@@ -62,23 +63,21 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
     const item: Detail = type === 'food' ? { type, name: '', amount: '' } : type === 'strength' ? { type, exercise: '', sets: '', reps: '', weight: '' } : { type, activity: '', duration: '', distance: '' };
     setDetails(current => current.length < 30 ? [...current, item] : current);
   }
+  const editActions = <div className="edit-actions"><p className="small">{dirty ? 'Unsaved changes. Save or discard before copying or marking logged.' : 'Make your corrections, then save.'}</p><div className="button-row"><button type="button" className="button primary" disabled={busy || !dirty || (editing === 'note' && !note.trim())} onClick={() => void save()}>Save changes</button><button type="button" className="button subtle" disabled={busy} onClick={() => { setEditing(null); setDetails(entry.details); setNote(entry.note); }}>Discard changes</button></div></div>;
   return <section className="review-sheet" aria-labelledby="review-heading">
-    <div className="section-heading"><div><p className="muted small">Saved {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+    <div className="section-heading"><div><p className="muted small">Saved <time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time></p>
       <h2 id="review-heading">Review your {entry.kind === 'meal' ? 'meal' : 'workout'}</h2></div><span className={`status-tag ${entry.logged ? 'logged' : ''}`}>{entry.logged ? 'Logged' : 'To log'}</span></div>
-    <div className="working-note">
-      {editing === 'note' ? <label className="field-label">Working note<textarea aria-label="Working note" rows={4} maxLength={4000} value={note} onChange={event => setNote(event.target.value)} disabled={busy} /></label> : <><p className="note-text">{entry.note}</p><button type="button" className="text-button" disabled={busy || editing !== null || recording} onClick={() => edit('note')}>Edit note</button></>}
-    </div>
-    <details className="original-note"><summary>Original note</summary><p className="note-text">{entry.originalNote}</p></details>
-
-    <div className="section-heading detail-heading"><h3>Details to log</h3>{editing !== 'details' && <button type="button" className="text-button" disabled={busy || editing !== null || recording} onClick={() => edit('details')}>Edit details</button>}</div>
+    <section className="review-details" aria-labelledby="details-heading">
+    <div className="section-heading detail-heading"><h3 id="details-heading">Details to log</h3>{editing !== 'details' && <button type="button" className="text-button" disabled={busy || editing !== null || recording} onClick={() => edit('details')}>Edit details</button>}</div>
     {editing === 'details' ? <div className="details-editor">
       {details.map((detail, index) => <fieldset className="detail-editor" key={index}><legend>{detail.type === 'food' ? 'Food' : detail.type === 'strength' ? 'Strength' : 'Cardio'}</legend>
         <div className="detail-fields">{detailFields(detail).map(field => <label className="field-label" key={field}>{labels[field] ?? field}<input value={(detail as unknown as Record<string, string>)[field]} placeholder="Unknown" maxLength={500} disabled={busy} onChange={event => changeField(index, field, event.target.value)} /></label>)}</div>
         <button type="button" className="text-button" disabled={busy} onClick={() => setDetails(current => current.filter((_, position) => position !== index))}>Remove {detailLabel(detail) || 'item'}</button>
       </fieldset>)}
       <div className="button-row">{(entry.kind === 'meal' ? ['food'] as const : ['strength', 'cardio'] as const).map(type => <button type="button" key={type} className="button subtle" disabled={busy || details.length >= 30} onClick={() => add(type)}>Add {type}</button>)}</div>
-    </div> : details.length > 0 ? <div className="detail-list">{details.map((detail, index) => <div className="detail-row" key={index}><strong>{detailLabel(detail) || 'Unnamed item'}</strong><dl>{detailFields(detail).slice(1).map(field => <div key={field}><dt>{labels[field] ?? field}</dt><dd>{(detail as unknown as Record<string, string>)[field] || 'Unknown'}</dd></div>)}</dl></div>)}</div> : <p className="muted">No structured details yet. You can add them yourself.</p>}
-    {editing && <div className="edit-actions"><p className="small">{dirty ? 'Unsaved changes. Save or discard before copying or marking logged.' : 'Make your corrections, then save.'}</p><div className="button-row"><button type="button" className="button primary" disabled={busy || !dirty || (editing === 'note' && !note.trim())} onClick={() => void save()}>Save changes</button><button type="button" className="button subtle" disabled={busy} onClick={() => { setEditing(null); setDetails(entry.details); setNote(entry.note); }}>Discard changes</button></div></div>}
+    </div> : details.length > 0 ? <div className="detail-list">{details.map((detail, index) => <div className={`detail-row ${detail.type}`} key={index}><strong>{detailLabel(detail) || 'Unnamed item'}</strong><dl>{detailFields(detail).slice(1).map(field => <div key={field}><dt>{labels[field] ?? field}</dt><dd>{(detail as unknown as Record<string, string>)[field] || 'Unknown'}</dd></div>)}</dl></div>)}</div> : <p className="muted">No structured details yet. You can add them yourself.</p>}
+    {editing === 'details' && editActions}
+    </section>
 
     {((entry.analysisStatus === 'processing' && !processingExpired) || busy) && <p className="muted small" role="status">Saving or preparing details… Your original note is saved.</p>}
     {(entry.analysisStatus === 'idle' || entry.analysisStatus === 'failed' || (entry.analysisStatus === 'processing' && processingExpired)) && <div className="analysis-retry"><p className="small">{entry.analysisStatus === 'processing' ? 'Details may have been interrupted. Your note is saved. You can retry now.' : entry.analysisStatus === 'failed' ? 'Details couldn’t be prepared. Your note is saved.' : 'Your note is saved. Prepare details when you’re ready.'}</p><button type="button" className="button subtle" disabled={blocked || editing !== null || Boolean(answer.trim())} onClick={() => void analyze()}>{entry.analysisStatus === 'idle' ? 'Prepare details' : 'Retry details'}</button></div>}
@@ -94,6 +93,12 @@ export function EntryReview({ entry, messages, busy, saveDetails, editNote, setL
     <div className="saved-actions"><div className="button-row"><button type="button" className="button primary" disabled={blocked || Boolean(answer.trim())} onClick={() => void copy()}>Copy saved text</button><button type="button" className="button outlined" disabled={blocked || Boolean(answer.trim())} onClick={() => void setLogged(!entry.logged)}>{entry.logged ? 'Undo logged' : 'Mark logged'}</button></div><p className="muted small">Copy into your usual tracker, then mark it logged.</p></div>
     {copyStatus && <p className="small" role="status">{copyStatus}</p>}
     {showCopy && <label className="field-label">Saved text to copy<textarea ref={copyArea} aria-label="Saved text to copy" className="copy-fallback" readOnly rows={7} value={savedText} onFocus={() => copyArea.current?.select()} /></label>}
+    <details className="working-note" open={editing === 'note' || noteExpanded} onToggle={event => { if (editing === 'note' && !event.currentTarget.open) event.currentTarget.open = true; else setNoteExpanded(event.currentTarget.open); }}>
+      <summary>Working note</summary>
+      {editing === 'note' ? <label className="field-label">Working note<textarea aria-label="Working note" rows={4} maxLength={4000} value={note} onChange={event => setNote(event.target.value)} disabled={busy} /></label> : <><p className="note-text">{entry.note}</p><button type="button" className="text-button" disabled={busy || editing !== null || recording} onClick={() => edit('note')}>Edit note</button></>}
+      {editing === 'note' && editActions}
+    </details>
+    <details className="original-note"><summary>Original note</summary><p className="note-text">{entry.originalNote}</p></details>
     <details className="conversation"><summary>Saved conversation <span className="muted">({messages.length})</span></summary>{messages.length ? <ol>{messages.map(message => <li key={message.id} className={`message ${message.role}`}><span className="message-author">{message.role === 'user' ? 'You' : 'Assistant'}</span><p>{message.content}</p></li>)}</ol> : <p className="muted small">Saved messages will appear here.</p>}</details>
   </section>;
 }

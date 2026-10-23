@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Entry } from '@domain/contracts';
 import { useFitness } from './lib/use-fitness';
 import { Capture } from './features/capture/Capture';
@@ -22,21 +22,71 @@ function AuthForm({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
 
 function entryTitle(entry: Entry) { return entry.note.split('\n')[0] || (entry.kind === 'meal' ? 'Meal' : 'Workout'); }
 
+function entryStatus(entry: Entry) {
+  if (entry.analysisStatus === 'processing') return 'Preparing details';
+  if (entry.analysisStatus === 'failed' || entry.analysisStatus === 'idle') return 'Retry details';
+  if (entry.pendingQuestion) return 'Optional detail';
+  return 'Ready to copy';
+}
+
 function Notebook({ fitness }: { fitness: ReturnType<typeof useFitness> }) {
   const [filter, setFilter] = useState<'to-log' | 'logged'>('to-log');
   const [reviewDirty, setReviewDirty] = useState(false);
+  const [captureRecording, setCaptureRecording] = useState(false);
+  const [mobileView, setMobileView] = useState<'capture' | 'inbox' | 'review'>('capture');
+  const inbox = useRef<HTMLElement>(null);
+  const inboxScroll = useRef(0);
+  const selectedEntryId = useRef<string | null>(null);
+  const focusRequested = useRef(false);
+  const reviewPanel = useRef<HTMLDivElement>(null);
+  const navigationBlocked = fitness.busy || fitness.loading || reviewDirty || captureRecording;
   const visible = fitness.entries.filter(entry => entry.logged === (filter === 'logged'));
-  return <div className="notebook">
-    <header className="app-header"><div className="brand"><span className="brand-mark" aria-hidden="true">f<span>.</span></span><div><h1>Fitness notebook</h1><p>Capture now. Log when you’re ready.</p></div></div><div className="account"><span className="small muted">{fitness.user?.email}</span><button type="button" className="text-button" disabled={fitness.busy} onClick={() => void fitness.signOut()}>Sign out</button></div></header>
+  const toLogCount = fitness.entries.filter(entry => !entry.logged).length;
+  useEffect(() => {
+    if (captureRecording) setMobileView('capture');
+    else if (reviewDirty) setMobileView('review');
+  }, [captureRecording, reviewDirty]);
+  useEffect(() => {
+    if (!focusRequested.current || fitness.loading) return;
+    focusRequested.current = false;
+    if (mobileView === 'inbox' && inbox.current) {
+      inbox.current.scrollTop = inboxScroll.current;
+      const row = Array.from(inbox.current.querySelectorAll<HTMLButtonElement>('[data-entry-id]')).find(button => button.dataset.entryId === selectedEntryId.current);
+      (row ?? inbox.current.querySelector<HTMLElement>('button'))?.focus({ preventScroll: true });
+    }
+    if (mobileView === 'capture') document.querySelector<HTMLTextAreaElement>('.capture-panel textarea')?.focus({ preventScroll: true });
+    if (mobileView === 'review' && !fitness.loading) reviewPanel.current?.focus();
+  }, [mobileView, fitness.loading]);
+  function navigate(next: 'capture' | 'inbox') {
+    if (navigationBlocked) return;
+    if (mobileView === 'inbox') inboxScroll.current = inbox.current?.scrollTop ?? 0;
+    focusRequested.current = true;
+    setMobileView(next);
+  }
+  function openEntry(id: string) {
+    if (navigationBlocked) return;
+    inboxScroll.current = inbox.current?.scrollTop ?? 0;
+    selectedEntryId.current = id;
+    focusRequested.current = true;
+    setMobileView('review');
+    void fitness.select(id);
+  }
+  return <div className="notebook" data-mobile-view={mobileView}>
+    <header className="app-header"><div className="brand"><span className="brand-mark" aria-hidden="true">f<span>.</span></span><h1>Fitness notebook</h1></div><div className="account"><span className="small muted">{fitness.user?.email}</span><button type="button" className="text-button" disabled={navigationBlocked} onClick={() => void fitness.signOut()}>Sign out</button></div></header>
+    <nav className="mobile-navigation" aria-label="Notebook"><button type="button" aria-pressed={mobileView === 'capture'} disabled={navigationBlocked} onClick={() => navigate('capture')}>Capture</button><button type="button" aria-pressed={mobileView !== 'capture'} disabled={navigationBlocked} onClick={() => navigate('inbox')}>Inbox <span>{toLogCount}</span></button></nav>
     {(fitness.error || fitness.notice) && <div className={`app-message ${fitness.error ? 'error' : ''}`} role={fitness.error ? 'alert' : 'status'}>{fitness.error || fitness.notice}</div>}
+    {reviewDirty && <p className="navigation-cue" role="status">Save or discard your review changes before navigating. Your draft is still here.</p>}
+    {captureRecording && <p className="navigation-cue" role="status">Stop recording before navigating. Your capture stays here.</p>}
     <main className="notebook-grid"><div className="main-column">
-      <Capture busy={fitness.busy} blocked={reviewDirty} onSave={fitness.capture} />
-      {fitness.selected && <EntryReview key={fitness.selected.entry.id} {...fitness.selected} busy={fitness.busy} saveDetails={fitness.saveDetails} editNote={fitness.editNote} setLogged={fitness.setLogged} reply={fitness.reply} skipQuestion={fitness.skipQuestion} analyze={fitness.analyze} onDirty={setReviewDirty} />}
-    </div><aside className="inbox" aria-labelledby="inbox-heading"><div className="section-heading"><h2 id="inbox-heading">Your inbox</h2><button type="button" className="text-button" onClick={() => void fitness.refresh()} disabled={fitness.busy || fitness.loading || reviewDirty}>Refresh</button></div>
-      <div className="inbox-tabs" role="group" aria-label="Inbox filter"><button type="button" aria-pressed={filter === 'to-log'} onClick={() => setFilter('to-log')}>To log <span>{fitness.entries.filter(entry => !entry.logged).length}</span></button><button type="button" aria-pressed={filter === 'logged'} onClick={() => setFilter('logged')}>Logged <span>{fitness.entries.filter(entry => entry.logged).length}</span></button></div>
-      {fitness.loading ? <p className="muted small" role="status">Opening your notes…</p> : visible.length ? <ol className="inbox-list">{visible.map(entry => <li key={entry.id}><button type="button" className={`inbox-item ${fitness.selected?.entry.id === entry.id ? 'selected' : ''}`} aria-current={fitness.selected?.entry.id === entry.id ? 'true' : undefined} disabled={fitness.busy || reviewDirty} onClick={() => void fitness.select(entry.id)}><span className="inbox-meta">{entry.kind === 'meal' ? 'Meal' : 'Workout'}<time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time></span><span className="inbox-title">{entryTitle(entry)}</span><span className="muted small">{entry.analysisStatus === 'processing' ? 'Preparing details…' : entry.pendingQuestion ? 'One optional detail' : entry.analysisStatus === 'failed' ? 'Note saved · details need a retry' : 'Open to review'}</span></button></li>)}</ol> : <div className="empty-inbox"><span aria-hidden="true">✓</span><p>{filter === 'logged' ? 'Your logged notes will live here.' : 'A clear page.'}</p><p className="muted small">{filter === 'logged' ? 'Mark a note logged after adding it to your tracker.' : 'Save a meal or workout. It will be here when you’re ready to log.'}</p></div>}
-      {reviewDirty && <p className="small inbox-cue">Save or discard your changes before opening another note.</p>}
-    </aside></main><footer className="app-footer">Just your words, a little structure, and room to remember.</footer>
+      <div className="capture-panel"><Capture busy={fitness.busy} blocked={reviewDirty} onRecording={setCaptureRecording} onSave={async (kind, note) => { const saved = await fitness.capture(kind, note); if (saved) { focusRequested.current = true; setMobileView('review'); } return saved; }} /></div>
+      <aside ref={inbox} className="inbox" aria-labelledby="inbox-heading"><div className="section-heading"><h2 id="inbox-heading">Your inbox</h2><button type="button" className="text-button" onClick={() => void fitness.refresh()} disabled={navigationBlocked}>Refresh</button></div>
+        <div className="inbox-tabs" role="group" aria-label="Inbox filter"><button type="button" aria-pressed={filter === 'to-log'} disabled={navigationBlocked} onClick={() => setFilter('to-log')}>To log <span>{toLogCount}</span></button><button type="button" aria-pressed={filter === 'logged'} disabled={navigationBlocked} onClick={() => setFilter('logged')}>Logged <span>{fitness.entries.length - toLogCount}</span></button></div>
+        {fitness.loading ? <p className="muted small" role="status">Opening your notes…</p> : visible.length ? <ol className="inbox-list">{visible.map(entry => <li key={entry.id}><button type="button" className={`inbox-item ${fitness.selected?.entry.id === entry.id ? 'selected' : ''}`} aria-current={fitness.selected?.entry.id === entry.id ? 'true' : undefined} disabled={navigationBlocked} data-entry-id={entry.id} onClick={() => openEntry(entry.id)}><span className="inbox-meta">{entry.kind === 'meal' ? 'Meal' : 'Workout'}<time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time></span><span className="inbox-title">{entryTitle(entry)}</span><span className={`entry-status ${entry.analysisStatus}`}>{entryStatus(entry)}</span></button></li>)}</ol> : <div className="empty-inbox"><p>{filter === 'logged' ? 'Your logged notes will live here.' : 'A clear page.'}</p><p className="muted small">{filter === 'logged' ? 'Mark a note logged after adding it to your tracker.' : 'Save a meal or workout to get started.'}</p></div>}
+      </aside>
+    </div><div className="review-panel" ref={reviewPanel} tabIndex={-1} aria-label="Selected note">
+      <button type="button" className="text-button back-to-inbox" disabled={navigationBlocked} onClick={() => navigate('inbox')}>Back to inbox</button>
+      {fitness.selected ? <EntryReview key={fitness.selected.entry.id} {...fitness.selected} busy={fitness.busy || fitness.loading || captureRecording} saveDetails={fitness.saveDetails} editNote={fitness.editNote} setLogged={fitness.setLogged} reply={fitness.reply} skipQuestion={fitness.skipQuestion} analyze={fitness.analyze} onDirty={setReviewDirty} /> : <section className="review-placeholder"><h2>{fitness.loading ? 'Opening your note…' : 'Select a note'}</h2><p className="muted">Select a meal or workout from your inbox to review, copy, and mark logged.</p></section>}
+    </div></main>
   </div>;
 }
 
